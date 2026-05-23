@@ -9,6 +9,7 @@
   <title>GPSL Player Database</title>
 
   <style>
+    /* (UNCHANGED CSS — all your styles remain exactly as you sent them) */
     body {
       background: #111;
       color: #ddd;
@@ -16,7 +17,6 @@
       padding: 20px;
       margin: 0;
     }
-
     a.button, button.button {
       display: inline-block;
       padding: 10px 20px;
@@ -30,12 +30,10 @@
       cursor: pointer;
       border: none;
     }
-
     a.button:hover, button.button:hover {
       background: #ffaa22;
       transform: scale(1.05);
     }
-
     #pageTitle {
       background:#222;
       color:#ff9900;
@@ -46,7 +44,6 @@
       font-size:24px;
       font-weight:bold;
     }
-
     .filter-group {
       background:#1a1a1a;
       color:#ff9900;
@@ -59,14 +56,12 @@
       align-items:center;
       border:1px solid #333;
     }
-
     .filter-group strong {
       width:100%;
       font-size:14px;
       margin-bottom:4px;
       color:#ffaa22;
     }
-
     input, select {
       background:#222;
       color:#ddd;
@@ -74,7 +69,6 @@
       padding:4px 6px;
       border-radius:4px;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -84,7 +78,6 @@
       overflow: hidden;
       margin-top: 10px;
     }
-
     th {
       background: #222;
       color: #ff9900;
@@ -98,12 +91,9 @@
       cursor: pointer;
       text-align: center;
     }
-
     th:last-child { border-right: none; }
-
     th.sort-asc::after { content: " ▲"; font-size: 10px; }
     th.sort-desc::after { content: " ▼"; font-size: 10px; }
-
     td {
       padding: 6px 8px;
       border-bottom: 1px solid #333;
@@ -111,26 +101,19 @@
       font-size: 12px;
       text-align: center;
     }
-
     td:last-child { border-right: none; }
-
     tbody tr:nth-child(odd) { background: #1f1f1f; }
     tbody tr:nth-child(even) { background: #262626; }
-
     tbody tr:hover { background: #333 !important; }
-
     #pagination {
       color: #ff9900;
       font-weight: bold;
       margin-top: 20px;
     }
-
     #rowsPerPage {
       margin-top: 20px;
       color: #ff9900;
     }
-
-    /* MODAL */
     .modal-backdrop {
       display: none;
       position: fixed;
@@ -141,7 +124,6 @@
       align-items: center;
       z-index: 9999;
     }
-
     .modal {
       background: #1a1a1a;
       border: 1px solid #333;
@@ -150,27 +132,22 @@
       width: 480px;
       color:#ddd;
     }
-
     #offerError {
       color: #ff4444;
       font-size: 12px;
       min-height: 14px;
       margin-top: 6px;
     }
-
     .modal-buttons {
       margin-top: 15px;
       display: flex;
       justify-content: space-between;
     }
-
-    /* SIDE-BY-SIDE PLAYER HEADER */
     .player-header {
       display:flex;
       gap:15px;
       margin-bottom:15px;
     }
-
     .player-header img {
       width: auto;
       height: 130px;
@@ -182,14 +159,12 @@
       display: block;
       margin: 0;
     }
-
     .player-header-info {
       display:flex;
       flex-direction:column;
       gap:6px;
       font-size:14px;
     }
-
     .bid-row {
       display: flex;
       align-items: center;
@@ -197,12 +172,10 @@
       margin: 4px 0;
       font-size: 14px;
     }
-
     .bid-row label {
       color:#ff9900;
       margin-right:6px;
     }
-
     .inc-btn {
       padding: 6px 10px;
       margin-right: 6px;
@@ -214,7 +187,6 @@
       font-size:13px;
     }
     .inc-btn:hover { background:#666; }
-
     .dec-btn {
       padding: 6px 10px;
       margin-right: 6px;
@@ -226,7 +198,6 @@
       font-size:13px;
     }
     .dec-btn:hover { background:#773333; }
-
   </style>
 </head>
 
@@ -236,6 +207,7 @@
 
   <h1 id="pageTitle">GPSL – Player Database</h1>
 
+  <!-- (UNCHANGED HTML CONTENT BELOW) -->
   <div id="controls">
     <div class="filter-group">
       <button id="clearFiltersBtn" class="button">Clear Filters</button>
@@ -315,7 +287,7 @@
 
   <script type="module" src="gpdb_v2.js"></script>
 
-  <!-- NAVIGATION + AUTH -->
+  <!-- ⭐ UPDATED NAVIGATION + AUTH -->
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -326,18 +298,53 @@
 
     window.supabase = supabase;
 
-    /* ⭐ NEW: required variable */
     let draftEnabled = false;
 
-    /* ⭐ NEW: load global settings BEFORE building nav */
     async function loadGlobalSettings() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("global_settings")
         .select("draft_auction_enabled")
         .eq("id", 1)
         .single();
 
       draftEnabled = data?.draft_auction_enabled === true;
+    }
+
+    async function buildNav(user) {
+      const nav = document.getElementById("nav");
+
+      const buttons = [
+        { page: "index", label: "Home", href: "index.html" },
+        { page: "gpdb", label: "Player Database", href: "GPDB.html" },
+        { page: "clubs", label: "Clubs", href: "clubs.html" },
+        { page: "listings", label: "Transfer Market", href: "all_listings.html" },
+        { page: "dashboard", label: "Dashboard", href: "dashboard.html" }
+      ];
+
+      let html = "";
+
+      for (const btn of buttons) {
+        if (btn.page !== CURRENT_PAGE) {
+          html += `<a href="${btn.href}" class="button">${btn.label}</a>`;
+        }
+      }
+
+      if (user.email === "rotavator66@outlook.com" && CURRENT_PAGE !== "admin") {
+        html += `<a href="admin.html" class="button">GPSL Admin</a>`;
+      }
+
+      if (draftEnabled && CURRENT_PAGE !== "draftauction") {
+        html += `<a href="draftauction.html" class="button">Draft Auction</a>`;
+      }
+
+      html += `<button id="logoutBtn" class="button">Logout</button>`;
+
+      nav.innerHTML = html;
+
+      document.getElementById("logoutBtn").onclick = async () => {
+        await supabase.auth.signOut();
+        window.location = "login.html";
+      };
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
@@ -348,31 +355,8 @@
         return;
       }
 
-      /* ⭐ MUST load settings BEFORE building nav */
       await loadGlobalSettings();
-
-      const nav = document.getElementById("nav");
-      nav.innerHTML = `
-        <a href="index.html" class="button">Home</a>
-        <a href="clubs.html" class="button">Clubs</a>
-        <a href="dashboard.html" class="button">Dashboard</a>
-        <a href="all_listings.html" class="button">Transfer List</a>
-        <button id="logoutBtn" class="button">Logout</button>
-      `;
-
-      if (user.email === "rotavator66@outlook.com") {
-        nav.innerHTML += `<a href="admin.html" class="button">GPSL Admin</a>`;
-      }
-
-      /* ⭐ NEW: Draft Auction button */
-      if (draftEnabled) {
-        nav.innerHTML += `<a href="draftauction.html" class="button">Draft Auction</a>`;
-      }
-
-      document.getElementById("logoutBtn").onclick = async () => {
-        await supabase.auth.signOut();
-        window.location = "login.html";
-      };
+      await buildNav(user);
     });
   </script>
 
@@ -391,13 +375,11 @@
   display: block;
   margin: 0 auto;
 }
-
 #make-offer-modal table tr,
 #make-offer-modal table td {
   height: auto !important;
   overflow: visible !important;
 }
-
 .gpdb-thumb {
   height: 70px;
   width: auto;
