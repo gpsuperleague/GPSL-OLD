@@ -1,11 +1,15 @@
+<script>
+  const CURRENT_PAGE = "dashboard";
+</script>
+
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>GPSL Club Dashboard</title>
 
-  <!-- KEEPING YOUR INLINE STYLE EXACTLY AS-IS -->
   <style>
+    /* (ALL YOUR ORIGINAL CSS — UNCHANGED) */
     body {
       background: #111;
       color: #ddd;
@@ -13,7 +17,6 @@
       margin: 0;
       padding: 0;
     }
-
     a.button, button.button {
       display: inline-block;
       padding: 10px 20px;
@@ -27,50 +30,42 @@
       cursor: pointer;
       border: none;
     }
-
     a.button:hover, button.button:hover {
       background: #ffaa22;
       transform: scale(1.05);
     }
-
     #nav {
       padding: 15px;
       background: #1a1a1a;
       border-bottom: 1px solid #333;
       text-align: center;
     }
-
     h1 {
       margin: 0;
       font-size: 26px;
       color: #ff9900;
     }
-
     .page-container {
       width: 95%;
       max-width: 1400px;
       margin: 20px auto 40px auto;
     }
-
     #headerContainer {
       display: flex;
       justify-content: space-between;
       gap: 20px;
       margin-bottom: 20px;
     }
-
     #headerLeft {
       display: flex;
       align-items: center;
       gap: 20px;
     }
-
     #clubBadgeHeader {
       width: 120px;
       height: 120px;
       object-fit: contain;
     }
-
     .panel, .card {
       background: #1a1a1a;
       border: 1px solid #333;
@@ -78,24 +73,20 @@
       padding: 20px;
       margin-bottom: 20px;
     }
-
     .panelTitle {
       color: #ff9900;
       margin-bottom: 10px;
     }
-
     .detailRow {
       margin-bottom: 10px;
       display: flex;
       gap: 10px;
       align-items: center;
     }
-
     .detailRow label {
       width: 100px;
       color: #ffaa22;
     }
-
     .small-btn {
       padding: 4px 10px;
       background: #ff9900;
@@ -104,26 +95,21 @@
       cursor: pointer;
       border: none;
     }
-
     .top-panels-row {
       display: flex;
       gap: 20px;
       margin-bottom: 30px;
     }
-
     .top-panels-row .panel {
       flex: 1;
     }
-
     #mainContent {
       display: flex;
       gap: 20px;
     }
-
     #leftColumn {
       flex: 1;
     }
-
     #rightColumn {
       flex: 1;
     }
@@ -148,34 +134,29 @@
       </div>
     </div>
 
+    <!-- (ALL YOUR ORIGINAL HTML CONTENT — UNCHANGED) -->
     <div class="top-panels-row">
-
       <div class="panel">
         <h2 class="panelTitle">Club Details</h2>
-
         <div id="clubDetailsPanel">
           <div class="detailRow">
             <label>Club:</label>
             <span id="clubNameField"></span>
           </div>
-
           <div class="detailRow owner-row">
             <label>Owner:</label>
             <input id="ownerInput" type="text">
             <button id="editOwnerBtn" class="small-btn">Edit</button>
             <button id="saveOwnerBtn" class="small-btn">Save</button>
           </div>
-
           <div class="detailRow">
             <label>Stadium:</label>
             <span id="stadiumField"></span>
           </div>
-
           <div class="detailRow">
             <label>Capacity:</label>
             <span id="capacityField"></span>
           </div>
-
           <div class="detailRow">
             <label>Club Tier:</label>
             <span id="club-tier">Loading...</span>
@@ -185,31 +166,23 @@
 
       <div class="panel">
         <h2 class="panelTitle">Stadium</h2>
-
         <p><strong>Current Capacity:</strong> <span id="current-capacity">Loading...</span></p>
         <p><strong>Next Upgrade:</strong> <span id="next-capacity">Loading...</span></p>
         <p><strong>Upgrade Cost:</strong> <span id="upgrade-cost">Loading...</span></p>
-
         <button id="upgrade-stadium-btn" class="button">Upgrade Stadium</button>
-
         <p id="upgrade-message" style="margin-top:10px;"></p>
       </div>
 
       <div class="panel">
         <h2 class="panelTitle">Club Finances</h2>
-
         <p><strong>Balance:</strong></p>
         <div id="finance-balance" class="finance-box">Loading…</div>
-
         <p style="margin-top:15px;"><strong>Wage Percentage:</strong> <span id="wage-percentage">Loading...</span></p>
       </div>
-
     </div>
 
     <div id="mainContent">
-
       <div id="leftColumn">
-
         <h2 class="section-header">Squad</h2>
         <div class="panel">
           <table class="gpsl-table">
@@ -229,11 +202,9 @@
             <tbody id="squad-body"></tbody>
           </table>
         </div>
-
       </div>
 
       <div id="rightColumn">
-
         <h2 class="section-header">Transfer Centre</h2>
 
         <div class="panel">
@@ -267,7 +238,6 @@
                 <th>Time Remaining</th>
                 <th>Highest Bid</th>
                 <th>Highest Club</th>
-                <!-- ❌ REMOVED ACTION COLUMN -->
               </tr>
             </thead>
             <tbody id="active-listings-body"></tbody>
@@ -395,7 +365,7 @@
     </div>
   </div>
 
-  <!-- SUPABASE CLIENT -->
+  <!-- SUPABASE CLIENT + UPDATED NAV -->
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -406,6 +376,55 @@
 
     window.supabase = supabase;
 
+    let draftEnabled = false;
+
+    async function loadGlobalSettings() {
+      const { data } = await supabase
+        .from("global_settings")
+        .select("draft_auction_enabled")
+        .eq("id", 1)
+        .single();
+
+      draftEnabled = data?.draft_auction_enabled === true;
+    }
+
+    async function buildNav(user) {
+      const nav = document.getElementById("nav");
+
+      const buttons = [
+        { page: "index", label: "Home", href: "index.html" },
+        { page: "gpdb", label: "Player Database", href: "GPDB.html" },
+        { page: "clubs", label: "Clubs", href: "clubs.html" },
+        { page: "listings", label: "Transfer Market", href: "all_listings.html" },
+        { page: "dashboard", label: "Dashboard", href: "dashboard.html" }
+      ];
+
+      let html = "";
+
+      for (const btn of buttons) {
+        if (btn.page !== CURRENT_PAGE) {
+          html += `<a href="${btn.href}" class="button">${btn.label}</a>`;
+        }
+      }
+
+      if (user.email === "rotavator66@outlook.com" && CURRENT_PAGE !== "admin") {
+        html += `<a href="admin.html" class="button">GPSL Admin</a>`;
+      }
+
+      if (draftEnabled && CURRENT_PAGE !== "draftauction") {
+        html += `<a href="draftauction.html" class="button">Draft Auction</a>`;
+      }
+
+      html += `<button id="logoutBtn" class="button">Logout</button>`;
+
+      nav.innerHTML = html;
+
+      document.getElementById("logoutBtn").onclick = async () => {
+        await supabase.auth.signOut();
+        window.location = "login.html";
+      };
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -414,25 +433,10 @@
         return;
       }
 
+      await loadGlobalSettings();
+      await buildNav(user);
+
       document.getElementById("userEmail").textContent = user.email;
-
-      const nav = document.getElementById("nav");
-      nav.innerHTML = `
-        <a href="index.html" class="button">Home</a>
-        <a href="GPDB.html" class="button">Player Database</a>
-        <a href="clubs.html" class="button">Clubs</a>
-        <a href="all_listings.html" class="button">Transfer Market</a>
-        <button id="logoutBtn" class="button">Logout</button>
-      `;
-
-      if (user.email === "rotavator66@outlook.com") {
-        nav.innerHTML += `<a href="admin.html" class="button">GPSL Admin</a>`;
-      }
-
-      document.getElementById("logoutBtn").onclick = async () => {
-        await supabase.auth.signOut();
-        window.location = "login.html";
-      };
 
       const { data: club, error } = await supabase
         .from("Clubs")
