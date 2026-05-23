@@ -279,7 +279,12 @@
         return;
       }
 
-      const playerIds = [...new Set(listings.map(l => l.player_id))];
+      // 🔧 KEY FIX: normalise player_id -> numeric Konami_IDs for the .in() query
+      const playerIds = [...new Set(
+        listings
+          .map(l => Number(String(l.player_id).trim()))
+          .filter(v => !Number.isNaN(v))
+      )];
 
       // 2) Load players
       const { data: players, error: playersErr } = await supabase
