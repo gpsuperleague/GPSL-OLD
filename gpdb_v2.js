@@ -475,7 +475,7 @@ async function ensureDraftListingForPlayer(player) {
   const { data: listing, error: listingErr } = await supabase
     .from("Player_Transfer_Listings")
     .insert({
-      player_id: player.Konami_ID,          // ⭐ correct column
+      player_id: String(player.Konami_ID)          // ⭐ correct column
       seller_club_id: null,
       reserve_price: player.market_value || 0,
       status: "active",                     // ⭐ active immediately
