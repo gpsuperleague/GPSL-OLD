@@ -345,17 +345,17 @@ document.getElementById("confirmOfferBtn").onclick = async () => {
 
   const sellerClub = CURRENT_OFFER_PLAYER.Contracted_Team;
   const { data: clubRow, error: clubErr } = await supabase
-  .from("Clubs")
-  .select("ShortName")
-  .eq("owner_id", CURRENT_USER.id)
-  .single();
+    .from("Clubs")
+    .select("ShortName")
+    .eq("owner_id", CURRENT_USER.id)
+    .single();
 
-if (clubErr || !clubRow) {
-  errorBox.textContent = "Your club could not be found.";
-  return;
-}
+  if (clubErr || !clubRow) {
+    errorBox.textContent = "Your club could not be found.";
+    return;
+  }
 
-const myClub = clubRow.ShortName;
+  const myClub = clubRow.ShortName;
 
   // Free agent but draft auction disabled
   if (!sellerClub && !GLOBAL_SETTINGS.draftAuctionEnabled) {
@@ -396,7 +396,6 @@ const myClub = clubRow.ShortName;
     bid_amount: offer,
     bid_time: new Date().toISOString(),
     is_direct: true
-    // no draft flags here – this is NOT a draft auction bid
   });
 
   if (error) {
@@ -459,25 +458,66 @@ async function getDraftCreditsForGPDB(clubShortName) {
   return (firstCount * 2) - joinCount;
 }
 
-async function insertDraftBid(player, amount, club, isFirst, isJoin, consumeJoin = false) {
-  const { error } = await supabase.from("Player_Transfer_Bids").insert({
-    direct_bid_id: player.Konami_ID,
-    bidder_club_id: club,
-    bid_amount: amount,
-    is_direct: true,
-    is_first_draft_bid: isFirst,
-    is_draft_join: isJoin,
-    draft_join_consumed: consumeJoin,
-    bid_time: new Date().toISOString()
-  });
+/* ⭐ NEW: ensure a Player_Transfer_Listings row exists for this player */
 
-  if (error) {
+async function ensureDraftListingForPlayer(player) {
+  const { data: existing, error: existingErr } = await supabase
+    .from("Player_Transfer_Listings")
+    .select("id")
+    .eq("konami_id", player.Konami_ID)
+    .single();
+
+  if (existing && !existingErr) {
+    return { ok: true, listingId: existing.id };
+  }
+
+  const { data: listing, error: listingErr } = await supabase
+    .from("Player_Transfer_Listings")
+    .insert({
+      konami_id: player.Konami_ID,
+      seller_club_id: null,
+      reserve_price: player.market_value || 0,   // reserve = MV
+      status: "active",                          // active immediately
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (listingErr || !listing) {
+    console.error(listingErr);
+    return { ok: false, msg: "Error creating draft listing." };
+  }
+
+  return { ok: true, listingId: listing.id };
+}
+
+/* ⭐ UPDATED: return inserted bid so we can link it */
+
+async function insertDraftBid(player, amount, club, isFirst, isJoin, consumeJoin = false) {
+  const { data, error } = await supabase
+    .from("Player_Transfer_Bids")
+    .insert({
+      direct_bid_id: player.Konami_ID,
+      bidder_club_id: club,
+      bid_amount: amount,
+      is_direct: true,
+      is_first_draft_bid: isFirst,
+      is_draft_join: isJoin,
+      draft_join_consumed: consumeJoin,
+      bid_time: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
     console.error(error);
     return { ok: false, msg: "Error submitting draft bid." };
   }
 
-  return { ok: true };
+  return { ok: true, bid: data };
 }
+
+/* ⭐ UPDATED: create listing + link bid via listing_id */
 
 async function submitDraftBid(player, offerAmount, buyerShortName) {
   const { data: existing, error: existingErr } = await supabase
@@ -495,6 +535,15 @@ async function submitDraftBid(player, offerAmount, buyerShortName) {
   const isFirstBid = !existing || existing.length === 0;
   const isJoining = !isFirstBid;
 
+  // Ensure there is a listing for this player
+  const listingResult = await ensureDraftListingForPlayer(player);
+  if (!listingResult.ok) {
+    return listingResult;
+  }
+  const listingId = listingResult.listingId;
+
+  let bidResult;
+
   if (isJoining) {
     const { data: priorJoin } = await supabase
       .from("Player_Transfer_Bids")
@@ -504,18 +553,32 @@ async function submitDraftBid(player, offerAmount, buyerShortName) {
       .eq("is_draft_join", true);
 
     if (priorJoin && priorJoin.length > 0) {
-      return await insertDraftBid(player, offerAmount, buyerShortName, false, true);
+      bidResult = await insertDraftBid(player, offerAmount, buyerShortName, false, true);
+    } else {
+      const credits = await getDraftCreditsForGPDB(buyerShortName);
+      if (credits <= 0) {
+        return { ok: false, msg: "You do not have enough draft credits to join this auction." };
+      }
+      bidResult = await insertDraftBid(player, offerAmount, buyerShortName, false, true, true);
     }
-
-    const credits = await getDraftCreditsForGPDB(buyerShortName);
-    if (credits <= 0) {
-      return { ok: false, msg: "You do not have enough draft credits to join this auction." };
-    }
-
-    return await insertDraftBid(player, offerAmount, buyerShortName, false, true, true);
+  } else {
+    // First bid
+    bidResult = await insertDraftBid(player, offerAmount, buyerShortName, true, false);
   }
 
-  return await insertDraftBid(player, offerAmount, buyerShortName, true, false);
+  if (!bidResult.ok) return bidResult;
+
+  const { error: linkErr } = await supabase
+    .from("Player_Transfer_Bids")
+    .update({ listing_id: listingId })
+    .eq("bid_id", bidResult.bid.bid_id);
+
+  if (linkErr) {
+    console.error(linkErr);
+    return { ok: false, msg: "Error linking bid to listing." };
+  }
+
+  return { ok: true };
 }
 
 /* ============================================================
