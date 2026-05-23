@@ -100,7 +100,9 @@
       color:#999;
       cursor:not-allowed;
     }
-    .thumb {
+
+    /* MATCH GPDB IMAGE SIZE */
+    .draft-thumb {
       height:50px;
       width:auto;
       object-fit:contain;
@@ -113,6 +115,7 @@
     }
   </style>
 </head>
+
 <body>
   <div id="nav"></div>
 
@@ -123,6 +126,7 @@
     <table class="gpsl-table">
       <thead>
         <tr>
+          <th></th> <!-- image column -->
           <th>Player</th>
           <th>Pos</th>
           <th>Rating</th>
@@ -263,11 +267,10 @@
       tbody.innerHTML = "";
 
       if (!draftEnabled || !randomFinishTime) {
-        tbody.innerHTML = `<tr><td colspan="8">Draft auction is not active.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">Draft auction is not active.</td></tr>`;
         return;
       }
 
-      // 1) Load all active draft listings
       const { data: listings, error: listingsErr } = await supabase
         .from("Player_Transfer_Listings")
         .select("id, player_id, reserve_price, status")
@@ -275,31 +278,28 @@
         .eq("status", "active");
 
       if (listingsErr || !listings || !listings.length) {
-        tbody.innerHTML = `<tr><td colspan="8">No active draft auctions.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">No active draft auctions.</td></tr>`;
         return;
       }
 
-      // 🔧 KEY FIX: normalise player_id -> numeric Konami_IDs for the .in() query
       const playerIds = [...new Set(
         listings
           .map(l => Number(String(l.player_id).trim()))
           .filter(v => !Number.isNaN(v))
       )];
 
-      // 2) Load players
       const { data: players, error: playersErr } = await supabase
         .from("Players")
         .select("Konami_ID, Name, Position, Rating, market_value")
         .in("Konami_ID", playerIds);
 
       if (playersErr || !players || !players.length) {
-        tbody.innerHTML = `<tr><td colspan="8">Error loading players for draft auctions.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">Error loading players for draft auctions.</td></tr>`;
         return;
       }
 
       const playerMap = new Map(players.map(p => [String(p.Konami_ID), p]));
 
-      // 3) Load bids for these listings
       const listingIds = listings.map(l => l.id);
 
       const { data: bids, error: bidsErr } = await supabase
@@ -308,11 +308,10 @@
         .in("listing_id", listingIds);
 
       if (bidsErr || !bids || !bids.length) {
-        tbody.innerHTML = `<tr><td colspan="8">No bids found for draft auctions.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">No bids found for draft auctions.</td></tr>`;
         return;
       }
 
-      // 4) Load clubs for leading club names (ShortName -> Club)
       const clubShortNames = [...new Set(bids.map(b => b.bidder_club_id))];
 
       const { data: clubs, error: clubsErr } = await supabase
@@ -359,26 +358,33 @@
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>
-            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">
-              <img
-                class="thumb"
-                src="player_images/${player.Konami_ID}.png"
-                alt="${player.Name}"
-                onerror="this.src='player_images/silhouette.png';"
-              />
-              <a class="player-link" href="draftauction_player.html?player=${player.Konami_ID}">
-                ${player.Name}
-              </a>
-            </div>
+            <img
+              class="draft-thumb"
+              src="https://pesdb.net/assets/img/card/b${player.Konami_ID}.png"
+              alt="${player.Name}"
+              onerror="this.src='https://i.imgur.com/3s8XQ7Y.png';"
+            />
           </td>
+
+          <td>
+            <a class="player-link" href="draftauction_player.html?player=${player.Konami_ID}">
+              ${player.Name}
+            </a>
+          </td>
+
           <td>${player.Position}</td>
           <td>${player.Rating}</td>
+
           <td>₿ ${Number(player.market_value).toLocaleString("en-GB")}</td>
+
           <td>₿ ${Number(highestAmount).toLocaleString("en-GB")}</td>
+
           <td>${leadingClubFull}</td>
+
           <td class="time-cell">
             ${formatTimeRemaining(nowLocal)}
           </td>
+
           <td>
             <button
               class="bid-btn ${bidBtnClass}"
@@ -393,7 +399,7 @@
       }
 
       if (!tbody.children.length) {
-        tbody.innerHTML = `<tr><td colspan="8">No active draft auctions.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">No active draft auctions.</td></tr>`;
       }
 
       document.addEventListener("click", (e) => {
@@ -415,7 +421,6 @@
 
       const { sevenPmYesterday, sixPmToday: sixPm } = getDraftWindowTimes();
 
-      // must have at least one draft bid before 6pm to bid after 6pm
       if (nowLocal >= sixPmToday) {
         const { data: pre6Bids } = await supabase
           .from("Player_Transfer_Bids")
@@ -443,7 +448,6 @@
 
       if (isFirstBidder) return true;
 
-      // joining auction: check if they already joined this player
       const { data: priorJoins } = await supabase
         .from("Player_Transfer_Bids")
         .select("bid_id")
@@ -452,7 +456,7 @@
         .eq("is_draft_join", true);
 
       if (priorJoins && priorJoins.length) {
-        return true; // already paid credit for this thread
+        return true;
       }
 
       const credits = await getDraftCredits(clubShortName, sevenPmYesterday, sixPm);
@@ -503,17 +507,4 @@
       });
 
       if (nowLocal >= randomFinishTime) {
-        const statusEl = document.getElementById("draftStatus");
-        statusEl.textContent = "Draft auction has ended. Results are final.";
-
-        document.querySelectorAll(".bid-btn.enabled").forEach(btn => {
-          btn.classList.remove("enabled");
-          btn.classList.add("disabled");
-          btn.textContent = "Ended";
-          btn.disabled = true;
-        });
-      }
-    }
-  </script>
-</body>
-</html>
+        const statusEl = document.getElementById("
