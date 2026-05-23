@@ -474,12 +474,12 @@ async function ensureDraftListingForPlayer(player) {
   const { data: listing, error: listingErr } = await supabase
     .from("Player_Transfer_Listings")
     .insert({
-      konami_id: player.Konami_ID,
-      seller_club_id: null,
-      reserve_price: player.market_value || 0,   // reserve = MV
-      status: "active",                          // active immediately
-      created_at: new Date().toISOString()
-    })
+        player_id: player.Konami_ID,
+        seller_club_id: null,
+        reserve_price: player.market_value || 0,
+        status: "active",
+        created_at: new Date().toISOString()
+      })
     .select()
     .single();
 
