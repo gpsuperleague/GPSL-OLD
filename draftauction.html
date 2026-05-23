@@ -163,7 +163,6 @@
       await loadBuyerClubShortName(user.id);
       await loadDraftAuctions();
 
-      // refresh countdown every 10s
       setInterval(updateCountdowns, 10000);
     });
 
@@ -192,7 +191,7 @@
       if (!draftEnabled) {
         statusEl.textContent = "Draft auction is currently disabled.";
       } else if (randomFinishTime && now >= randomFinishTime) {
-        statusEl.textContent = "Draft auction has concluded for this window.";
+        statusEl.textContent = "Draft auction has ended. Results are final.";
       } else {
         statusEl.textContent =
           "Draft auction is active. Auctions end at a random time between 18:50 and 19:00.";
@@ -268,47 +267,75 @@
         return;
       }
 
-      const { sevenPmYesterday, sevenPmToday } = getDraftWindowTimes();
+      // 1) Load all active draft listings
+      const { data: listings, error: listingsErr } = await supabase
+        .from("Player_Transfer_Listings")
+        .select("id, player_id, reserve_price, status")
+        .eq("listing_type", "draft")
+        .eq("status", "active");
 
-     const { data: bids, error: bidsErr } = await supabase
-      .from("Player_Transfer_Bids")
-      .select("direct_bid_id, bidder_club_id, bid_amount, bid_time, is_first_draft_bid, is_draft_join")
-      .eq("is_direct", true)
-      .or("is_first_draft_bid.eq.true,is_draft_join.eq.true")
-      .gte("bid_time", sevenPmYesterday.toISOString())
-      .lt("bid_time", sevenPmToday.toISOString());
-
-      if (bidsErr || !bids || !bids.length) {
+      if (listingsErr || !listings || !listings.length) {
         tbody.innerHTML = `<tr><td colspan="8">No active draft auctions.</td></tr>`;
         return;
       }
 
-      const playerIds = [...new Set(bids.map(b => b.direct_bid_id))];
+      const playerIds = [...new Set(listings.map(l => l.player_id))];
 
+      // 2) Load players
       const { data: players, error: playersErr } = await supabase
         .from("Players")
-        .select("Konami_ID, Name, Position, Rating, market_value, Contracted_Team")
-        .in("Konami_ID", playerIds)
-        .is("Contracted_Team", null);
+        .select("Konami_ID, Name, Position, Rating, market_value")
+        .in("Konami_ID", playerIds);
 
       if (playersErr || !players || !players.length) {
-        tbody.innerHTML = `<tr><td colspan="8">Error loading draft auctions.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8">Error loading players for draft auctions.</td></tr>`;
         return;
       }
+
+      const playerMap = new Map(players.map(p => [String(p.Konami_ID), p]));
+
+      // 3) Load bids for these listings
+      const listingIds = listings.map(l => l.id);
+
+      const { data: bids, error: bidsErr } = await supabase
+        .from("Player_Transfer_Bids")
+        .select("listing_id, direct_bid_id, bidder_club_id, bid_amount, bid_time")
+        .in("listing_id", listingIds);
+
+      if (bidsErr || !bids || !bids.length) {
+        tbody.innerHTML = `<tr><td colspan="8">No bids found for draft auctions.</td></tr>`;
+        return;
+      }
+
+      // 4) Load clubs for leading club names (ShortName -> Club)
+      const clubShortNames = [...new Set(bids.map(b => b.bidder_club_id))];
+
+      const { data: clubs, error: clubsErr } = await supabase
+        .from("Clubs")
+        .select("ShortName, Club")
+        .in("ShortName", clubShortNames);
+
+      const clubMap = new Map(
+        (clubs || []).map(c => [c.ShortName, c.Club])
+      );
 
       const nowLocal = new Date();
       const { sixPmToday } = getDraftWindowTimes();
 
-      for (const player of players) {
-        const playerBids = bids.filter(b => b.direct_bid_id === player.Konami_ID);
-        if (!playerBids.length) continue;
+      for (const listing of listings) {
+        const player = playerMap.get(String(listing.player_id));
+        if (!player) continue;
 
-        const highest = playerBids.reduce(
+        const listingBids = bids.filter(b => b.listing_id === listing.id);
+        if (!listingBids.length) continue;
+
+        const highest = listingBids.reduce(
           (max, b) => (b.bid_amount > max.bid_amount ? b : max),
-          playerBids[0]
+          listingBids[0]
         );
 
-        const leadingClub = highest.bidder_club_id;
+        const leadingClubShort = highest.bidder_club_id;
+        const leadingClubFull = clubMap.get(leadingClubShort) || leadingClubShort;
         const highestAmount = highest.bid_amount;
 
         const canBid = await canClubBidOnPlayer(
@@ -318,8 +345,11 @@
           sixPmToday
         );
 
-        const bidBtnClass = canBid ? "enabled" : "disabled";
-        const bidBtnLabel = canBid ? "Bid" : "Locked";
+        const now = new Date();
+        const auctionEnded = randomFinishTime && now >= randomFinishTime;
+
+        const bidBtnClass = !auctionEnded && canBid ? "enabled" : "disabled";
+        const bidBtnLabel = auctionEnded ? "Ended" : (canBid ? "Bid" : "Locked");
 
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -340,15 +370,15 @@
           <td>${player.Rating}</td>
           <td>₿ ${Number(player.market_value).toLocaleString("en-GB")}</td>
           <td>₿ ${Number(highestAmount).toLocaleString("en-GB")}</td>
-          <td>${leadingClub}</td>
-          <td class="time-cell" data-finish="${randomFinishTime.toISOString()}">
+          <td>${leadingClubFull}</td>
+          <td class="time-cell">
             ${formatTimeRemaining(nowLocal)}
           </td>
           <td>
             <button
               class="bid-btn ${bidBtnClass}"
               data-konami-id="${player.Konami_ID}"
-              ${canBid ? "" : "disabled"}
+              ${!auctionEnded && canBid ? "" : "disabled"}
             >
               ${bidBtnLabel}
             </button>
@@ -466,6 +496,18 @@
       cells.forEach(cell => {
         cell.textContent = formatTimeRemaining(nowLocal);
       });
+
+      if (nowLocal >= randomFinishTime) {
+        const statusEl = document.getElementById("draftStatus");
+        statusEl.textContent = "Draft auction has ended. Results are final.";
+
+        document.querySelectorAll(".bid-btn.enabled").forEach(btn => {
+          btn.classList.remove("enabled");
+          btn.classList.add("disabled");
+          btn.textContent = "Ended";
+          btn.disabled = true;
+        });
+      }
     }
   </script>
 </body>
