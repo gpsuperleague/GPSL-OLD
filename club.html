@@ -408,11 +408,24 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9teXlvZ2Z1bXJqb2F3ZXVhd2puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NTUxMzUsImV4cCI6MjA5MDUzMTEzNX0.7UVkpi4DOtC9VNjFLnE_ZnK6vhDtlfesZ_8rfnrkno4'
     );
 
+    window.supabase = supabase;
+
     let transferWindowOpen = false;
     let buyerShortName = null;
     let currentOfferKonamiId = null;
     let currentOfferSellerClub = null;
     let currentPlayerMarketValue = null;
+    let draftEnabled = false;
+
+    async function loadGlobalSettings() {
+      const { data, error } = await supabase
+        .from("global_settings")
+        .select("draft_auction_enabled")
+        .eq("id", 1)
+        .single();
+
+      draftEnabled = data?.draft_auction_enabled === true;
+    }
 
     document.addEventListener("DOMContentLoaded", async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -422,18 +435,24 @@
         return;
       }
 
+      await loadGlobalSettings();
+
       const nav = document.getElementById("nav");
       nav.innerHTML = `
         <a href="index.html" class="button">Home</a>
         <a href="GPDB.html" class="button">Player Database</a>
         <a href="clubs.html" class="button">Clubs</a>
-        <a href="all_listings.html" class="button">Transfer Market</a>
         <a href="dashboard.html" class="button">Dashboard</a>
+        <a href="all_listings.html" class="button">Transfer List</a>
         <button id="logoutBtn" class="button">Logout</button>
       `;
 
       if (user.email === "rotavator66@outlook.com") {
         nav.innerHTML += `<a href="admin.html" class="button">GPSL Admin</a>`;
+      }
+
+      if (draftEnabled) {
+        nav.innerHTML += `<a href="draftauction.html" class="button">Draft Auction</a>`;
       }
 
       document.getElementById("logoutBtn").onclick = async () => {
