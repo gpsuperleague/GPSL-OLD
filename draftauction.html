@@ -277,7 +277,7 @@
         .eq("status", "active");
 
       if (listingsErr || !listings || !listings.length) {
-        tbody.innerHTML = `<tr><td colspan="8">No active draft auctions.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">No active draft auctions.</td></tr>`;
         return;
       }
 
@@ -310,7 +310,7 @@
         .in("listing_id", listingIds);
 
       if (bidsErr || !bids || !bids.length) {
-        tbody.innerHTML = `<tr><td colspan="8">No bids found for draft auctions.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">No bids found for draft auctions.</td></tr>`;
         return;
       }
 
@@ -395,7 +395,7 @@
       }
 
       if (!tbody.children.length) {
-        tbody.innerHTML = `<tr><td colspan="8">No active draft auctions.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">No active draft auctions.</td></tr>`;
       }
 
       document.addEventListener("click", (e) => {
