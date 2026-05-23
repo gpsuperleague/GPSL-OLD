@@ -142,7 +142,7 @@
 
     <div id="adminPanel" style="display:none;">
 
-      <!-- SEASON MANAGEMENT -->
+            <!-- SEASON MANAGEMENT -->
       <div class="card">
         <h2>Season Management</h2>
 
@@ -341,7 +341,7 @@
       document.getElementById("adminPanel").style.display = "block";
     });
 
-    /* REMAINDER OF ADMIN LOGIC (UNCHANGED) */
+    /* SEASON ROLLOVER LOGIC */
     document.addEventListener("DOMContentLoaded", () => {
       const modal = document.getElementById("seasonRolloverModalBackdrop");
       const status = document.getElementById("rolloverStatus");
@@ -366,6 +366,7 @@
       };
     });
 
+    /* OWNER LIST LOADING */
     document.addEventListener("DOMContentLoaded", async () => {
       const dropdown = document.getElementById("updateOwnerSelect");
 
@@ -402,6 +403,7 @@
       });
     });
 
+    /* ADD OWNER */
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("addOwnerBtn");
       const status = document.getElementById("ownerStatus");
@@ -428,6 +430,7 @@
       };
     });
 
+    /* UPDATE OWNER EMAIL */
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("updateEmailBtn");
       const status = document.getElementById("updateEmailStatus");
@@ -453,6 +456,7 @@
       };
     });
 
+    /* RESET OWNER PASSWORD */
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("resetPasswordBtn");
       const status = document.getElementById("resetPasswordStatus");
@@ -476,6 +480,26 @@
           : "✅ Reset email sent!";
       };
     });
+
+        /* ----------------------------- */
+    /* DRAFT AUCTION SETTINGS LOGIC  */
+    /* ----------------------------- */
+
+    function generateRandomDraftEndTime() {
+      const now = new Date();
+
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+      // Base end at 18:50 tomorrow
+      const baseEnd = new Date(tomorrow);
+      baseEnd.setHours(18, 50, 0, 0);
+
+      // Random extra seconds between 0 and 599 (0–9:59)
+      const extraSeconds = Math.floor(Math.random() * 600);
+
+      return new Date(baseEnd.getTime() + extraSeconds * 1000);
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
       async function loadSettings() {
@@ -504,10 +528,25 @@
         const draft_auction_enabled =
           document.getElementById("draftAuctionSelect").value === "true";
 
+        let draft_random_finish_time = null;
+
+        if (draft_auction_enabled) {
+          // Generate new random finish time for tomorrow 18:50–18:59:59
+          const randomEnd = generateRandomDraftEndTime();
+          draft_random_finish_time = randomEnd.toISOString();
+        } else {
+          // Clear the finish time when disabled
+          draft_random_finish_time = null;
+        }
+
         const { error } = await supabase.functions.invoke(
           "update-global-settings",
           {
-            body: { transfer_window_open, draft_auction_enabled }
+            body: {
+              transfer_window_open,
+              draft_auction_enabled,
+              draft_random_finish_time
+            }
           }
         );
 
