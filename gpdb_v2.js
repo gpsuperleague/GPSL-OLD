@@ -464,7 +464,7 @@ async function ensureDraftListingForPlayer(player) {
   const { data: existing, error: existingErr } = await supabase
     .from("Player_Transfer_Listings")
     .select("id")
-    .eq("player_id", player.Konami_ID)
+    .eq("player_id", String(player.Konami_ID))
     .single();
 
   if (existing && !existingErr) {
