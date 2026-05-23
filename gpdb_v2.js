@@ -459,8 +459,8 @@ async function getDraftCreditsForGPDB(clubShortName) {
 }
 
 /* ⭐ NEW: ensure a Player_Transfer_Listings row exists for this player */
-
 async function ensureDraftListingForPlayer(player) {
+  // Check if listing already exists
   const { data: existing, error: existingErr } = await supabase
     .from("Player_Transfer_Listings")
     .select("id")
@@ -471,15 +471,16 @@ async function ensureDraftListingForPlayer(player) {
     return { ok: true, listingId: existing.id };
   }
 
+  // Create new listing
   const { data: listing, error: listingErr } = await supabase
     .from("Player_Transfer_Listings")
     .insert({
-        player_id: player.Konami_ID,
-        seller_club_id: null,
-        reserve_price: player.market_value || 0,
-        status: "active",
-        created_at: new Date().toISOString()
-      })
+      player_id: player.Konami_ID,          // ⭐ correct column
+      seller_club_id: null,
+      reserve_price: player.market_value || 0,
+      status: "active",                     // ⭐ active immediately
+      created_at: new Date().toISOString()
+    })
     .select()
     .single();
 
