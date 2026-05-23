@@ -361,17 +361,17 @@
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>
-            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">
-              <img
-                class="thumb"
-                src="player_images/${player.Konami_ID}.png"
-                alt="${player.Name}"
-                onerror="this.src='player_images/silhouette.png';"
-              />
-              <a class="player-link" href="draftauction_player.html?player=${player.Konami_ID}">
-                ${player.Name}
-              </a>
-            </div>
+            <img
+              class="draft-thumb"
+              src="https://pesdb.net/assets/img/card/b${player.Konami_ID}.png"
+              alt="${player.Name}"
+              onerror="this.src='https://i.imgur.com/3s8XQ7Y.png';"
+            />
+          </td>
+          <td>
+            <a class="player-link" href="draftauction_player.html?player=${player.Konami_ID}">
+              ${player.Name}
+            </a>
           </td>
           <td>${player.Position}</td>
           <td>${player.Rating}</td>
