@@ -487,14 +487,19 @@
       return (firstCount * 2) - uniqueJoins;
     }
 
-    function formatTimeRemaining(nowLocal) {
-      if (!randomFinishTime) return "-";
-      const diffMs = randomFinishTime - nowLocal;
-      if (diffMs <= 0) return "Ended";
-      const mins = Math.floor(diffMs / 60000);
-      const secs = Math.floor((diffMs % 60000) / 1000);
-      return `${mins}m ${secs}s`;
-    }
+function formatTimeRemaining(nowLocal) {
+  if (!randomFinishTime) return "-";
+  const diffMs = randomFinishTime - nowLocal;
+  if (diffMs <= 0) return "Ended";
+
+  const totalSecs = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSecs / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+
+  return `${hours}h ${mins}m ${secs}s`;
+}
+
 
 
     function updateCountdowns() {
