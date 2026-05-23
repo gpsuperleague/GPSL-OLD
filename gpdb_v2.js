@@ -204,7 +204,7 @@ function renderTable(players) {
             bidCell = `<span class="locked-msg">Your Player</span>`;
           }
         } else {
-          const inDraft = ACTIVE_DRAFT_PLAYERS.has(String(player.Konami_ID));
+          const inDraft = ACTIVE_DRAFT_PLAYERS.has(String(player.Konami_ID).trim());
           if (inDraft) {
             bidCell = `<span class="locked-msg">In Draft Auction</span>`;
           } else if (GLOBAL_SETTINGS.draftAuctionEnabled) {
@@ -386,8 +386,7 @@ document.getElementById("confirmOfferBtn").onclick = async () => {
       return;
     }
 
-    // mark this player as in draft locally and refresh table
-    ACTIVE_DRAFT_PLAYERS.add(String(CURRENT_OFFER_PLAYER.Konami_ID));
+    ACTIVE_DRAFT_PLAYERS.add(String(CURRENT_OFFER_PLAYER.Konami_ID).trim());
     closeMakeOfferModal();
     alert("Draft bid submitted!");
     loadPage(CURRENT_PAGE);
@@ -488,13 +487,16 @@ function getDraftAuctionTimesForNewListing() {
 
 /* ensure a Player_Transfer_Listings row exists for this player */
 async function ensureDraftListingForPlayer(player) {
-  const konamiStr = String(player.Konami_ID);
+  const konamiStr = String(player.Konami_ID).trim();
 
+  // try to find existing listing
   const { data: existing, error: existingErr } = await supabase
     .from("Player_Transfer_Listings")
-    .select("id")
+    .select("id, player_id")
     .eq("player_id", konamiStr)
-    .single();
+    .eq("listing_type", "draft")
+    .eq("status", "active")
+    .maybeSingle();
 
   if (existing && !existingErr) {
     return { ok: true, listingId: existing.id };
@@ -515,22 +517,38 @@ async function ensureDraftListingForPlayer(player) {
       end_time: end.toISOString(),
       created_at: new Date().toISOString()
     })
-    .select()
+    .select("*")
     .single();
 
   if (listingErr || !listing) {
-    console.error(listingErr);
+    console.error("Error creating draft listing:", listingErr);
+
+    // fallback: try to fetch the latest listing for this player
+    const { data: fallback, error: fallbackErr } = await supabase
+      .from("Player_Transfer_Listings")
+      .select("id, player_id")
+      .eq("player_id", konamiStr)
+      .eq("listing_type", "draft")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fallback && !fallbackErr) {
+      return { ok: true, listingId: fallback.id };
+    }
+
     return { ok: false, msg: "Error creating draft listing." };
   }
 
   return { ok: true, listingId: listing.id };
 }
 
-/* return inserted bid so we can link it */
-async function insertDraftBid(player, amount, club, isFirst, isJoin, consumeJoin = false) {
+/* return inserted bid so we can link it (listing_id set at insert) */
+async function insertDraftBid(player, amount, club, isFirst, isJoin, consumeJoin, listingId) {
   const { data, error } = await supabase
     .from("Player_Transfer_Bids")
     .insert({
+      listing_id: listingId,
       direct_bid_id: player.Konami_ID,
       bidder_club_id: club,
       bid_amount: amount,
@@ -540,11 +558,11 @@ async function insertDraftBid(player, amount, club, isFirst, isJoin, consumeJoin
       draft_join_consumed: consumeJoin,
       bid_time: new Date().toISOString()
     })
-    .select()
+    .select("*")
     .single();
 
   if (error || !data) {
-    console.error(error);
+    console.error("Error inserting draft bid:", error);
     return { ok: false, msg: "Error submitting draft bid." };
   }
 
@@ -585,29 +603,43 @@ async function submitDraftBid(player, offerAmount, buyerShortName) {
       .eq("is_draft_join", true);
 
     if (priorJoin && priorJoin.length > 0) {
-      bidResult = await insertDraftBid(player, offerAmount, buyerShortName, false, true);
+      bidResult = await insertDraftBid(
+        player,
+        offerAmount,
+        buyerShortName,
+        false,
+        true,
+        false,
+        listingId
+      );
     } else {
       const credits = await getDraftCreditsForGPDB(buyerShortName);
       if (credits <= 0) {
         return { ok: false, msg: "You do not have enough draft credits to join this auction." };
       }
-      bidResult = await insertDraftBid(player, offerAmount, buyerShortName, false, true, true);
+      bidResult = await insertDraftBid(
+        player,
+        offerAmount,
+        buyerShortName,
+        false,
+        true,
+        true,
+        listingId
+      );
     }
   } else {
-    bidResult = await insertDraftBid(player, offerAmount, buyerShortName, true, false);
+    bidResult = await insertDraftBid(
+      player,
+      offerAmount,
+      buyerShortName,
+      true,
+      false,
+      false,
+      listingId
+    );
   }
 
   if (!bidResult.ok) return bidResult;
-
-  const { error: linkErr } = await supabase
-    .from("Player_Transfer_Bids")
-    .update({ listing_id: listingId })
-    .eq("bid_id", bidResult.bid.bid_id);
-
-  if (linkErr) {
-    console.error(linkErr);
-    return { ok: false, msg: "Error linking bid to listing." };
-  }
 
   return { ok: true };
 }
@@ -627,7 +659,7 @@ async function loadActiveDraftListings() {
   }
 
   ACTIVE_DRAFT_PLAYERS = new Set(
-    (data || []).map(row => String(row.player_id))
+    (data || []).map(row => String(row.player_id).trim())
   );
 }
 
