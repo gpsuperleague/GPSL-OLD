@@ -99,7 +99,6 @@
       margin-top: 10px;
     }
 
-    /* Modal */
     #seasonRolloverModalBackdrop {
       position: fixed;
       top: 0;
@@ -190,7 +189,6 @@
       <div class="card">
         <h2>Owner Administration</h2>
 
-        <!-- ADD OWNER -->
         <div class="row">
           <div>
             <input id="ownerEmail" placeholder="Owner Email">
@@ -213,7 +211,6 @@
 
         <hr style="border-color:#333; margin:20px 0;">
 
-        <!-- UPDATE EMAIL -->
         <div class="row">
           <div>
             <label>Owner</label>
@@ -229,7 +226,6 @@
 
         <hr style="border-color:#333; margin:20px 0;">
 
-        <!-- RESET PASSWORD -->
         <div class="row">
           <div>
             <input id="resetOwnerEmail" placeholder="Owner Email">
@@ -245,7 +241,6 @@
 
   </div>
 
-  <!-- MODAL -->
   <div id="seasonRolloverModalBackdrop">
     <div id="seasonRolloverModal">
       <h3>Start New Season</h3>
@@ -265,7 +260,7 @@
     </div>
   </div>
 
-  <!-- ALL ADMIN LOGIC -->
+  <!-- ADMIN LOGIC + UPDATED NAV -->
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -276,7 +271,55 @@
 
     window.supabase = supabase;
 
-    /* AUTH CHECK */
+    let draftEnabled = false;
+
+    async function loadGlobalSettings() {
+      const { data } = await supabase
+        .from("global_settings")
+        .select("draft_auction_enabled")
+        .eq("id", 1)
+        .single();
+
+      draftEnabled = data?.draft_auction_enabled === true;
+    }
+
+    async function buildNav(user) {
+      const nav = document.getElementById("nav");
+
+      const buttons = [
+        { page: "index", label: "Home", href: "index.html" },
+        { page: "gpdb", label: "Player Database", href: "GPDB.html" },
+        { page: "clubs", label: "Clubs", href: "clubs.html" },
+        { page: "listings", label: "Transfer Market", href: "all_listings.html" },
+        { page: "dashboard", label: "Dashboard", href: "dashboard.html" }
+      ];
+
+      let html = "";
+
+      for (const btn of buttons) {
+        if (btn.page !== CURRENT_PAGE) {
+          html += `<a href="${btn.href}" class="button">${btn.label}</a>`;
+        }
+      }
+
+      if (user.email === "rotavator66@outlook.com" && CURRENT_PAGE !== "admin") {
+        html += `<a href="admin.html" class="button">GPSL Admin</a>`;
+      }
+
+      if (draftEnabled && CURRENT_PAGE !== "draftauction") {
+        html += `<a href="draftauction.html" class="button">Draft Auction</a>`;
+      }
+
+      html += `<button id="logoutBtn" class="button">Logout</button>`;
+
+      nav.innerHTML = html;
+
+      document.getElementById("logoutBtn").onclick = async () => {
+        await supabase.auth.signOut();
+        window.location = "login.html";
+      };
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -285,21 +328,8 @@
         return;
       }
 
-      const nav = document.getElementById("nav");
-      nav.innerHTML = `
-        <a href="index.html" class="button">Home</a>
-        <a href="GPDB.html" class="button">Player Database</a>
-        <a href="clubs.html" class="button">Clubs</a>
-        <a href="all_listings.html" class="button">Transfer Market</a>
-        <a href="dashboard.html" class="button">Dashboard</a>
-        <button id="logoutBtn" class="button">Logout</button>
-        <a href="admin.html" class="button">GPSL Admin</a>
-      `;
-
-      document.getElementById("logoutBtn").onclick = async () => {
-        await supabase.auth.signOut();
-        window.location = "login.html";
-      };
+      await loadGlobalSettings();
+      await buildNav(user);
 
       const adminEmails = ["rotavator66@outlook.com"];
 
@@ -311,7 +341,7 @@
       document.getElementById("adminPanel").style.display = "block";
     });
 
-    /* SEASON ROLLOVER */
+    /* REMAINDER OF ADMIN LOGIC (UNCHANGED) */
     document.addEventListener("DOMContentLoaded", () => {
       const modal = document.getElementById("seasonRolloverModalBackdrop");
       const status = document.getElementById("rolloverStatus");
@@ -336,48 +366,42 @@
       };
     });
 
-   /* LOAD OWNERS INTO DROPDOWN (Auth + Clubs join) */
-document.addEventListener("DOMContentLoaded", async () => {
-  const dropdown = document.getElementById("updateOwnerSelect");
+    document.addEventListener("DOMContentLoaded", async () => {
+      const dropdown = document.getElementById("updateOwnerSelect");
 
-  // 1. Load all Auth users via Edge Function
-  const { data: ownerData, error: ownerError } = await supabase.functions.invoke("list-owners");
+      const { data: ownerData, error: ownerError } = await supabase.functions.invoke("list-owners");
 
-  if (ownerError || !ownerData || !ownerData.users) {
-    dropdown.innerHTML = `<option>Error loading owners</option>`;
-    return;
-  }
+      if (ownerError || !ownerData || !ownerData.users) {
+        dropdown.innerHTML = `<option>Error loading owners</option>`;
+        return;
+      }
 
-  // 2. Load all clubs
-  const { data: clubs, error: clubError } = await supabase
-    .from("Clubs")
-    .select("ShortName, owner_id");
+      const { data: clubs, error: clubError } = await supabase
+        .from("Clubs")
+        .select("ShortName, owner_id");
 
-  if (clubError) {
-    dropdown.innerHTML = `<option>Error loading clubs</option>`;
-    return;
-  }
+      if (clubError) {
+        dropdown.innerHTML = `<option>Error loading clubs</option>`;
+        return;
+      }
 
-  dropdown.innerHTML = "";
+      dropdown.innerHTML = "";
 
-  // 3. Build dropdown entries
-  ownerData.users.forEach((u) => {
-    const id = u.id;
-    const email = u.email;
+      ownerData.users.forEach((u) => {
+        const id = u.id;
+        const email = u.email;
 
-    // Find matching club by owner_id
-    const club = clubs.find(c => c.owner_id === id);
-    const shortName = club ? club.ShortName : "NO CLUB";
+        const club = clubs.find(c => c.owner_id === id);
+        const shortName = club ? club.ShortName : "NO CLUB";
 
-    const option = document.createElement("option");
-    option.value = id;
-    option.textContent = `${shortName} — ${email}`;
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = `${shortName} — ${email}`;
 
-    dropdown.appendChild(option);
-  });
-});
+        dropdown.appendChild(option);
+      });
+    });
 
-    /* ADD OWNER */
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("addOwnerBtn");
       const status = document.getElementById("ownerStatus");
@@ -404,7 +428,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
     });
 
-    /* UPDATE OWNER EMAIL */
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("updateEmailBtn");
       const status = document.getElementById("updateEmailStatus");
@@ -430,7 +453,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
     });
 
-    /* RESET OWNER PASSWORD */
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("resetPasswordBtn");
       const status = document.getElementById("resetPasswordStatus");
@@ -455,7 +477,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
     });
 
-    /* GLOBAL SETTINGS */
     document.addEventListener("DOMContentLoaded", () => {
       async function loadSettings() {
         const { data, error } = await supabase
