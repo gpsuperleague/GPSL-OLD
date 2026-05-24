@@ -493,10 +493,19 @@
       let isDraftJoin = false;
       let draftJoinConsumed = false;
 
-      if (isFirstBidder) {
-        isFirstDraftBid = true;
-      } else {
-        isDraftJoin = true;
+     if (isFirstBidder) {
+
+  // ⭐ Prevent early credit earning
+  if (draftAuctionStartTime && nowLocal < draftAuctionStartTime) {
+    isFirstDraftBid = false;   // treat as normal bid, no credits earned
+  } else {
+    isFirstDraftBid = true;    // valid first draft bid
+  }
+
+} else {
+  isDraftJoin = true;
+  // (keep the rest of your join logic exactly as-is)
+
 
         const { data: priorJoins } = await supabase
           .from("Player_Transfer_Bids")
