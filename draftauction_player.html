@@ -440,16 +440,18 @@
           next.toLocaleString("en-GB");
       };
 
-      incBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-          let raw = amountInput.value.replace(/,/g, "");
-          let current = Number(raw || 0);
-          const delta = Number(btn.getAttribute("data-delta"));
-          if (!current) current = currentHighestBid || 0;
-          const next = current + delta;
-          amountInput.value = next.toLocaleString("en-GB");
-        });
-      });
+    document.querySelectorAll(".inc-btn, .dec-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    let raw = amountInput.value.replace(/,/g, "");
+    let current = Number(raw || 0);
+    const delta = Number(btn.getAttribute("data-delta"));
+    if (!current) current = currentHighestBid || 0;
+    let next = current + delta;
+    if (next < 0) next = 0;
+    amountInput.value = next.toLocaleString("en-GB");
+  });
+});
+
 
       submitBtn.onclick = submitBid;
     }
