@@ -455,14 +455,19 @@
   btn.addEventListener("click", () => {
     let raw = amountInput.value.replace(/,/g, "");
     let current = Number(raw || 0);
+
+    // If empty, start at minBid
+    if (!current) current = minBid;
+
     const delta = Number(btn.getAttribute("data-delta"));
-    if (!current) current = currentHighestBid || 0;
     let next = current + delta;
-    if (next < 0) next = 0;
+
+    // ⭐ Enforce minimum bid
+    if (next < minBid) next = minBid;
+
     amountInput.value = next.toLocaleString("en-GB");
   });
 });
-
 
       submitBtn.onclick = submitBid;
     }
