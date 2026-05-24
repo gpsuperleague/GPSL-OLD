@@ -434,12 +434,17 @@
       const incBtns = document.querySelectorAll(".inc-btn");
       const submitBtn = document.getElementById("submitBidBtn");
 
-      amountInput.addEventListener("input", () => {
-        let raw = amountInput.value.replace(/,/g, "");
-        raw = raw.replace(/\D/g, "");
-        const num = Number(raw || 0);
-        amountInput.value = num ? num.toLocaleString("en-GB") : "";
-      });
+     amountInput.addEventListener("input", () => {
+  let raw = amountInput.value.replace(/,/g, "");
+  raw = raw.replace(/\D/g, "");
+  let num = Number(raw || 0);
+
+  // ⭐ Enforce minimum bid
+  if (num < minBid) num = minBid;
+
+  amountInput.value = num.toLocaleString("en-GB");
+});
+
 
      quickBtn.onclick = () => {
   const next = minBid; // ⭐ Always jump to minimum valid bid
