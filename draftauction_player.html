@@ -284,8 +284,10 @@
 
       document.getElementById("currentHighest").textContent =
         `Current Highest Bid: ₿ ${Number(currentHighestBid).toLocaleString("en-GB")}`;
+     const leadingFull = await fullClubName(currentLeadingClub);
       document.getElementById("leadingClub").textContent =
-        `Leading Club: ${currentLeadingClub}`;
+        `Leading Club: ${leadingFull}`;
+
       document.getElementById("timeRemaining").textContent =
         randomFinishTime ? `Ends around: ${randomFinishTime.toLocaleTimeString("en-GB")}` : "End time not set";
 
