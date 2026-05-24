@@ -152,6 +152,7 @@
     let buyerShortName = null;
     let draftEnabled = false;
     let randomFinishTime = null;
+    let draftAuctionStartTime = null; // ⭐ NEW: holds official start time
 
     /* ============================================================
        SHARED CREDIT FUNCTIONS (GPDB VERSION)
@@ -276,7 +277,7 @@
       await buildNav(user);
       await loadBuyerClubShortName(user.id);
 
-      /* ⭐ NEW: Load unified credit panel */
+      /* ⭐ unified credit panel */
       await loadDraftCreditsForOwner();
 
       await loadDraftAuctions();
@@ -286,7 +287,7 @@
     async function loadGlobalSettings() {
       const { data, error } = await supabase
         .from("global_settings")
-        .select("draft_auction_enabled, draft_random_finish_time")
+        .select("draft_auction_enabled, draft_random_finish_time, draft_auction_start_time")
         .eq("id", 1)
         .single();
 
@@ -294,11 +295,19 @@
 
       if (error || !data) {
         draftEnabled = false;
+        draftAuctionStartTime = null;
+        randomFinishTime = null;
         statusEl.textContent = "Draft auction is currently disabled.";
         return;
       }
 
       draftEnabled = data.draft_auction_enabled === true;
+
+      // ⭐ NEW: load official start time
+      draftAuctionStartTime = data.draft_auction_start_time
+        ? new Date(data.draft_auction_start_time)
+        : null;
+
       randomFinishTime = data.draft_random_finish_time
         ? new Date(data.draft_random_finish_time)
         : null;
@@ -307,6 +316,8 @@
 
       if (!draftEnabled) {
         statusEl.textContent = "Draft auction is currently disabled.";
+      } else if (draftAuctionStartTime && now < draftAuctionStartTime) {
+        statusEl.textContent = "Draft auction has not started yet.";
       } else if (randomFinishTime && now >= randomFinishTime) {
         statusEl.textContent = "Draft auction has ended. Results are final.";
       } else {
@@ -355,7 +366,7 @@
     }
 
     /* ============================================================
-       EXISTING AUCTION LOGIC (UNCHANGED)
+       EXISTING AUCTION LOGIC (UNCHANGED EXCEPT FOR START-TIME CHECK)
        ============================================================ */
 
     async function loadDraftAuctions() {
@@ -421,8 +432,6 @@
 
       const nowLocal = new Date();
       const { sevenPmYesterday, sixPmToday } = getDraftWindowTimes();
-
-      /* ⭐ OLD CREDIT PANEL BLOCK REMOVED SAFELY */
 
       for (const listing of listings) {
         const player = playerMap.get(String(listing.player_id));
@@ -506,115 +515,119 @@
       });
     }
 
-   async function canClubBidOnPlayer(clubShortName, konamiId, nowLocal, sixPmToday) {
-  if (!draftEnabled || !clubShortName || !randomFinishTime) return false;
-  if (nowLocal >= randomFinishTime) return false;
+    async function canClubBidOnPlayer(clubShortName, konamiId, nowLocal, sixPmToday) {
+      if (!draftEnabled || !clubShortName || !randomFinishTime) return false;
 
-  const { sevenPmYesterday, sixPmToday: sixPm } = getDraftWindowTimes();
+      // ⭐ NEW: block all bids before official start time
+      if (draftAuctionStartTime && nowLocal < draftAuctionStartTime) return false;
 
-  // must have at least one draft bid before 6pm to bid after 6pm
-  if (nowLocal >= sixPmToday) {
-    const { data: pre6Bids } = await supabase
-      .from("Player_Transfer_Bids")
-      .select("bid_id")
-      .eq("bidder_club_id", clubShortName)
-      .eq("is_direct", true)
-      .gte("bid_time", sevenPmYesterday.toISOString())
-      .lt("bid_time", sixPmToday.toISOString());
+      if (nowLocal >= randomFinishTime) return false;
 
-    if (!pre6Bids || !pre6Bids.length) return false;
-  }
+      const { sevenPmYesterday, sixPmToday: sixPm } = getDraftWindowTimes();
 
-  const { data: existingBids } = await supabase
-    .from("Player_Transfer_Bids")
-    .select("bidder_club_id, bid_time")
-    .eq("direct_bid_id", konamiId)
-    .eq("is_direct", true)
-    .gte("bid_time", sevenPmYesterday.toISOString())
-    .lt("bid_time", getDraftWindowTimes().sevenPmToday.toISOString());
+      // must have at least one draft bid before 6pm to bid after 6pm
+      if (nowLocal >= sixPmToday) {
+        const { data: pre6Bids } = await supabase
+          .from("Player_Transfer_Bids")
+          .select("bid_id")
+          .eq("bidder_club_id", clubShortName)
+          .eq("is_direct", true)
+          .gte("bid_time", sevenPmYesterday.toISOString())
+          .lt("bid_time", sixPmToday.toISOString());
 
-  if (!existingBids || !existingBids.length) return false;
+        if (!pre6Bids || !pre6Bids.length) return false;
+      }
 
-  const firstBidder = existingBids[0].bidder_club_id;
-  const isFirstBidder = firstBidder === clubShortName;
+      const { data: existingBids } = await supabase
+        .from("Player_Transfer_Bids")
+        .select("bidder_club_id, bid_time")
+        .eq("direct_bid_id", konamiId)
+        .eq("is_direct", true)
+        .gte("bid_time", sevenPmYesterday.toISOString())
+        .lt("bid_time", getDraftWindowTimes().sevenPmToday.toISOString());
 
-  if (isFirstBidder) return true;
+      if (!existingBids || !existingBids.length) return false;
 
-  // joining auction: check if they already joined this player
-  const { data: priorJoins } = await supabase
-    .from("Player_Transfer_Bids")
-    .select("bid_id")
-    .eq("direct_bid_id", konamiId)
-    .eq("bidder_club_id", clubShortName)
-    .eq("is_draft_join", true);
+      const firstBidder = existingBids[0].bidder_club_id;
+      const isFirstBidder = firstBidder === clubShortName;
 
-  if (priorJoins && priorJoins.length) {
-    return true; // already paid credit for this thread
-  }
+      if (isFirstBidder) return true;
 
-  const credits = await getDraftCredits(clubShortName, sevenPmYesterday, sixPm);
-  return credits > 0;
-}
+      // joining auction: check if they already joined this player
+      const { data: priorJoins } = await supabase
+        .from("Player_Transfer_Bids")
+        .select("bid_id")
+        .eq("direct_bid_id", konamiId)
+        .eq("bidder_club_id", clubShortName)
+        .eq("is_draft_join", true);
 
-async function getDraftCredits(clubShortName, windowStart, sixPmToday) {
-  const { data: firsts } = await supabase
-    .from("Player_Transfer_Bids")
-    .select("direct_bid_id")
-    .eq("bidder_club_id", clubShortName)
-    .eq("is_first_draft_bid", true)
-    .gte("bid_time", windowStart.toISOString())
-    .lt("bid_time", sixPmToday.toISOString());
+      if (priorJoins && priorJoins.length) {
+        return true; // already paid credit for this thread
+      }
 
-  const { data: joins } = await supabase
-    .from("Player_Transfer_Bids")
-    .select("direct_bid_id, draft_join_consumed")
-    .eq("bidder_club_id", clubShortName)
-    .eq("is_draft_join", true)
-    .eq("draft_join_consumed", true)
-    .gte("bid_time", windowStart.toISOString())
-    .lt("bid_time", sixPmToday.toISOString());
+      const credits = await getDraftCredits(clubShortName, sevenPmYesterday, sixPm);
+      return credits > 0;
+    }
 
-  const firstCount = firsts ? firsts.length : 0;
-  const uniqueJoins = joins
-    ? new Set(joins.map(j => j.direct_bid_id)).size
-    : 0;
+    async function getDraftCredits(clubShortName, windowStart, sixPmToday) {
+      const { data: firsts } = await supabase
+        .from("Player_Transfer_Bids")
+        .select("direct_bid_id")
+        .eq("bidder_club_id", clubShortName)
+        .eq("is_first_draft_bid", true)
+        .gte("bid_time", windowStart.toISOString())
+        .lt("bid_time", sixPmToday.toISOString());
 
-  return (firstCount * 2) - uniqueJoins;
-}
+      const { data: joins } = await supabase
+        .from("Player_Transfer_Bids")
+        .select("direct_bid_id, draft_join_consumed")
+        .eq("bidder_club_id", clubShortName)
+        .eq("is_draft_join", true)
+        .eq("draft_join_consumed", true)
+        .gte("bid_time", windowStart.toISOString())
+        .lt("bid_time", sixPmToday.toISOString());
 
-function formatTimeRemaining(nowLocal) {
-  if (!randomFinishTime) return "-";
-  const diffMs = randomFinishTime - nowLocal;
-  if (diffMs <= 0) return "Ended";
+      const firstCount = firsts ? firsts.length : 0;
+      const uniqueJoins = joins
+        ? new Set(joins.map(j => j.direct_bid_id)).size
+        : 0;
 
-  const totalSecs = Math.floor(diffMs / 1000);
-  const hours = Math.floor(totalSecs / 3600);
-  const mins = Math.floor((totalSecs % 3600) / 60);
-  const secs = totalSecs % 60;
+      return (firstCount * 2) - uniqueJoins;
+    }
 
-  return `${hours}h ${mins}m ${secs}s`;
-}
+    function formatTimeRemaining(nowLocal) {
+      if (!randomFinishTime) return "-";
+      const diffMs = randomFinishTime - nowLocal;
+      if (diffMs <= 0) return "Ended";
 
-function updateCountdowns() {
-  if (!randomFinishTime) return;
-  const nowLocal = new Date();
-  const cells = document.querySelectorAll(".time-cell");
-  cells.forEach(cell => {
-    cell.textContent = formatTimeRemaining(nowLocal);
-  });
+      const totalSecs = Math.floor(diffMs / 1000);
+      const hours = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
 
-  if (nowLocal >= randomFinishTime) {
-    const statusEl = document.getElementById("draftStatus");
-    statusEl.textContent = "Draft auction has ended. Results are final.";
+      return `${hours}h ${mins}m ${secs}s`;
+    }
 
-    document.querySelectorAll(".bid-btn.enabled").forEach(btn => {
-      btn.classList.remove("enabled");
-      btn.classList.add("disabled");
-      btn.textContent = "Ended";
-      btn.disabled = true;
-    });
-  }
-}
+    function updateCountdowns() {
+      if (!randomFinishTime) return;
+      const nowLocal = new Date();
+      const cells = document.querySelectorAll(".time-cell");
+      cells.forEach(cell => {
+        cell.textContent = formatTimeRemaining(nowLocal);
+      });
+
+      if (nowLocal >= randomFinishTime) {
+        const statusEl = document.getElementById("draftStatus");
+        statusEl.textContent = "Draft auction has ended. Results are final.";
+
+        document.querySelectorAll(".bid-btn.enabled").forEach(btn => {
+          btn.classList.remove("enabled");
+          btn.classList.add("disabled");
+          btn.textContent = "Ended";
+          btn.disabled = true;
+        });
+      }
+    }
   </script>
 </body>
 </html>
