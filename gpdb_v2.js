@@ -161,6 +161,13 @@ async function loadDraftCreditsForOwner() {
 
 document.addEventListener("DOMContentLoaded", () => {
 
+  // Load draft credits panel
+  loadDraftCreditsForOwner();
+
+  /* ============================================================
+     MODULE B: Column Definitions
+     ============================================================ */
+
 /* ============================================================
    MODULE B: Column Definitions
    ============================================================ */
