@@ -9,12 +9,6 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9teXlvZ2Z1bXJqb2F3ZXVhd2puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NTUxMzUsImV4cCI6MjA5MDUzMTEzNX0.7UVkpi4DOtC9VNjFLnE_ZnK6vhDtlfesZ_8rfnrkno4'
 );
 
-async function loadDraftCreditsForOwner() {
-  try {
-    // Get logged-in user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
     // Get their club short name
     const { data: club } = await supabase
       .from("Clubs")
