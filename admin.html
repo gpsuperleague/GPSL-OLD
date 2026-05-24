@@ -142,7 +142,7 @@
 
     <div id="adminPanel" style="display:none;">
 
-            <!-- SEASON MANAGEMENT -->
+      <!-- SEASON MANAGEMENT -->
       <div class="card">
         <h2>Season Management</h2>
 
@@ -180,6 +180,12 @@
             </select>
           </div>
         </div>
+
+        <!-- ⭐ C1: RESET BUTTON INSERTED DIRECTLY UNDER DRAFT AUCTION DROPDOWN ⭐ -->
+        <button id="resetDraftBtn" class="button" style="background:#990000; margin-top:10px;">
+          Reset Draft Auction
+        </button>
+        <div id="resetDraftStatus" style="margin-top:10px; color:#ffcc00;"></div>
 
         <button class="button" id="saveSettingsBtn">Save Settings</button>
         <div id="settingsMessage" style="color:#ffcc00; margin-top:10px;"></div>
@@ -276,7 +282,7 @@
 
     let draftEnabled = false;
 
-       async function loadGlobalSettings() {
+    async function loadGlobalSettings() {
       const { data } = await supabase
         .from("global_settings")
         .select("draft_auction_enabled")
@@ -285,13 +291,11 @@
     
       draftEnabled = data?.draft_auction_enabled === true;
     
-      // --- NEW: Draft auction start time display ---
       const startEl = document.getElementById("draftStartTime");
     
       if (draftEnabled) {
         const now = new Date();
     
-        // Draft auction always begins at 19:00 on the day it is enabled
         const start = new Date(
           now.getFullYear(),
           now.getMonth(),
@@ -308,8 +312,6 @@
         startEl.textContent = "";
       }
     }
-
-
     async function buildNav(user) {
       const nav = document.getElementById("nav");
 
@@ -508,7 +510,7 @@
       };
     });
 
-        /* ----------------------------- */
+    /* ----------------------------- */
     /* DRAFT AUCTION SETTINGS LOGIC  */
     /* ----------------------------- */
 
@@ -518,11 +520,9 @@
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
-      // Base end at 18:50 tomorrow
       const baseEnd = new Date(tomorrow);
       baseEnd.setHours(18, 50, 0, 0);
 
-      // Random extra seconds between 0 and 599 (0–9:59)
       const extraSeconds = Math.floor(Math.random() * 600);
 
       return new Date(baseEnd.getTime() + extraSeconds * 1000);
@@ -549,62 +549,100 @@
       }
 
       document.getElementById("saveSettingsBtn").onclick = async () => {
-  const transfer_window_open =
-    document.getElementById("transferWindowSelect").value === "true";
+        const transfer_window_open =
+          document.getElementById("transferWindowSelect").value === "true";
 
-  const draft_auction_enabled =
-    document.getElementById("draftAuctionSelect").value === "true";
+        const draft_auction_enabled =
+          document.getElementById("draftAuctionSelect").value === "true";
 
-  let draft_random_finish_time = null;
-  let draft_auction_start_time = null;
+        let draft_random_finish_time = null;
+        let draft_auction_start_time = null;
 
-  if (draft_auction_enabled) {
-    // ⭐ 1. Calculate correct draft start time
-    const now = new Date();
-    const start = new Date(now);
+        if (draft_auction_enabled) {
+          const now = new Date();
+          const start = new Date(now);
 
-    // If before 19:00 → start today at 19:00
-    if (now.getHours() < 19) {
-      start.setHours(19, 0, 0, 0);
-    }
-    // If 19:00 or later → start tomorrow at 19:00
-    else {
-      start.setDate(start.getDate() + 1);
-      start.setHours(19, 0, 0, 0);
-    }
+          if (now.getHours() < 19) {
+            start.setHours(19, 0, 0, 0);
+          } else {
+            start.setDate(start.getDate() + 1);
+            start.setHours(19, 0, 0, 0);
+          }
 
-    draft_auction_start_time = start.toISOString();
+          draft_auction_start_time = start.toISOString();
 
-    // ⭐ 2. Generate random finish time for tomorrow 18:50–18:59:59
-    const randomEnd = generateRandomDraftEndTime();
-    draft_random_finish_time = randomEnd.toISOString();
-  } else {
-    // Clear both when disabled
-    draft_random_finish_time = null;
-    draft_auction_start_time = null;
-  }
+          const randomEnd = generateRandomDraftEndTime();
+          draft_random_finish_time = randomEnd.toISOString();
+        } else {
+          draft_random_finish_time = null;
+          draft_auction_start_time = null;
+        }
 
-  // ⭐ 3. Send all values to backend
-  const { error } = await supabase.functions.invoke(
-    "update-global-settings",
-    {
-      body: {
-        transfer_window_open,
-        draft_auction_enabled,
-        draft_random_finish_time,
-        draft_auction_start_time
+        const { error } = await supabase.functions.invoke(
+          "update-global-settings",
+          {
+            body: {
+              transfer_window_open,
+              draft_auction_enabled,
+              draft_random_finish_time,
+              draft_auction_start_time
+            }
+          }
+        );
+
+        document.getElementById("settingsMessage").textContent =
+          error ? "❌ " + error.message : "✅ Settings updated!";
+      };
+
+      loadSettings();
+    });
+
+    /* ============================================================
+       RESET DRAFT AUCTION (C1 placement)
+       ============================================================ */
+
+    document.getElementById("resetDraftBtn").onclick = async () => {
+      const status = document.getElementById("resetDraftStatus");
+
+      if (!confirm("Are you absolutely sure? This will delete ALL draft listings, ALL draft bids, and reset the draft state.")) {
+        return;
       }
-    }
-  );
 
-  document.getElementById("settingsMessage").textContent =
-    error ? "❌ " + error.message : "✅ Settings updated!";
-};
+      status.textContent = "Resetting draft auction…";
+      status.style.color = "#ffcc00";
 
-loadSettings();
-});
+      try {
+        await supabase
+          .from("Player_Transfer_Listings")
+          .delete()
+          .eq("listing_type", "draft");
+
+        await supabase
+          .from("Player_Transfer_Bids")
+          .delete()
+          .or("is_direct.eq.true,is_first_draft_bid.eq.true,is_draft_join.eq.true");
+
+        await supabase
+          .from("global_settings")
+          .update({
+            draft_auction_enabled: false,
+            draft_random_finish_time: null,
+            draft_auction_start_time: null
+          })
+          .eq("id", 1);
+
+        status.textContent = "Draft auction has been fully reset.";
+        status.style.color = "lime";
+
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Error resetting draft auction.";
+        status.style.color = "red";
+      }
+    };
 
   </script>
 
 </body>
 </html>
+
