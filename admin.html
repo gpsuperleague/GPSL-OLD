@@ -142,7 +142,7 @@
 
     <div id="adminPanel" style="display:none;">
 
-      <!-- SEASON MANAGEMENT -->
+            <!-- SEASON MANAGEMENT -->
       <div class="card">
         <h2>Season Management</h2>
 
@@ -183,10 +183,6 @@
 
         <button class="button" id="saveSettingsBtn">Save Settings</button>
         <div id="settingsMessage" style="color:#ffcc00; margin-top:10px;"></div>
-
-        <!-- NEW: Draft Auction Start Time -->
-        <p id="draftStartTime" class="status-note" style="margin-top:10px;"></p>
-
       </div>
 
       <!-- OWNER ADMINISTRATION -->
@@ -285,29 +281,6 @@
         .single();
 
       draftEnabled = data?.draft_auction_enabled === true;
-
-      // NEW: Update start time display
-      const startEl = document.getElementById("draftStartTime");
-
-      if (draftEnabled) {
-        const now = new Date();
-
-        // Draft auction always begins at 19:00 on the day it is enabled
-        const start = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate(),
-          19, 0, 0, 0
-        );
-
-        if (now < start) {
-          startEl.textContent = `Draft auction begins at: ${start.toLocaleString("en-GB")}`;
-        } else {
-          startEl.textContent = `Draft auction started at: ${start.toLocaleString("en-GB")}`;
-        }
-      } else {
-        startEl.textContent = "";
-      }
     }
 
     async function buildNav(user) {
@@ -508,7 +481,7 @@
       };
     });
 
-    /* ----------------------------- */
+        /* ----------------------------- */
     /* DRAFT AUCTION SETTINGS LOGIC  */
     /* ----------------------------- */
 
@@ -550,4 +523,41 @@
 
       document.getElementById("saveSettingsBtn").onclick = async () => {
         const transfer_window_open =
-          document.getElementById
+          document.getElementById("transferWindowSelect").value === "true";
+
+        const draft_auction_enabled =
+          document.getElementById("draftAuctionSelect").value === "true";
+
+        let draft_random_finish_time = null;
+
+        if (draft_auction_enabled) {
+          // Generate new random finish time for tomorrow 18:50–18:59:59
+          const randomEnd = generateRandomDraftEndTime();
+          draft_random_finish_time = randomEnd.toISOString();
+        } else {
+          // Clear the finish time when disabled
+          draft_random_finish_time = null;
+        }
+
+        const { error } = await supabase.functions.invoke(
+          "update-global-settings",
+          {
+            body: {
+              transfer_window_open,
+              draft_auction_enabled,
+              draft_random_finish_time
+            }
+          }
+        );
+
+        document.getElementById("settingsMessage").textContent =
+          error ? "❌ " + error.message : "✅ Settings updated!";
+      };
+
+      loadSettings();
+    });
+
+  </script>
+
+</body>
+</html>
