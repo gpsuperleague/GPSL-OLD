@@ -103,6 +103,32 @@ async function loadDraftCreditsForOwner() {
   }
 }
 
+async function getDraftCreditsForGPDB(clubShortName) {
+  const { sevenPmYesterday, sixPmToday } = getDraftWindowTimes();
+
+  const { data: firsts } = await supabase
+    .from("Player_Transfer_Bids")
+    .select("direct_bid_id")
+    .eq("bidder_club_id", clubShortName)
+    .eq("is_first_draft_bid", true)
+    .gte("bid_time", sevenPmYesterday.toISOString())
+    .lt("bid_time", sixPmToday.toISOString());
+
+  const { data: joins } = await supabase
+    .from("Player_Transfer_Bids")
+    .select("direct_bid_id")
+    .eq("bidder_club_id", clubShortName)
+    .eq("is_draft_join", true)
+    .eq("draft_join_consumed", true)
+    .gte("bid_time", sevenPmYesterday.toISOString())
+    .lt("bid_time", sixPmToday.toISOString());
+
+  const firstCount = firsts ? firsts.length : 0;
+  const joinCount = joins ? new Set(joins.map(j => j.direct_bid_id)).size : 0;
+
+  return (firstCount * 2) - joinCount;
+}
+
 /* ============================================================
    EVERYTHING ELSE MUST BE INSIDE DOMContentLoaded
    ============================================================ */
@@ -539,31 +565,7 @@ function getDraftWindowTimes() {
   return { sevenPmYesterday, sixPmToday, sevenPmToday };
 }
 
-async function getDraftCreditsForGPDB(clubShortName) {
-  const { sevenPmYesterday, sixPmToday } = getDraftWindowTimes();
 
-  const { data: firsts } = await supabase
-    .from("Player_Transfer_Bids")
-    .select("direct_bid_id")
-    .eq("bidder_club_id", clubShortName)
-    .eq("is_first_draft_bid", true)
-    .gte("bid_time", sevenPmYesterday.toISOString())
-    .lt("bid_time", sixPmToday.toISOString());
-
-  const { data: joins } = await supabase
-    .from("Player_Transfer_Bids")
-    .select("direct_bid_id")
-    .eq("bidder_club_id", clubShortName)
-    .eq("is_draft_join", true)
-    .eq("draft_join_consumed", true)
-    .gte("bid_time", sevenPmYesterday.toISOString())
-    .lt("bid_time", sixPmToday.toISOString());
-
-  const firstCount = firsts ? firsts.length : 0;
-  const joinCount = joins ? new Set(joins.map(j => j.direct_bid_id)).size : 0;
-
-  return (firstCount * 2) - joinCount;
-}
 
 // randomised daily draft auction times: start 19:00 today, end random 18:50–18:59:59 tomorrow
 function getDraftAuctionTimesForNewListing() {
