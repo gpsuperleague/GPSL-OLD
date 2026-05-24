@@ -550,50 +550,51 @@ if (draftEnabled && fullSettings?.draft_auction_start_time) {
       }
 
       document.getElementById("saveSettingsBtn").onclick = async () => {
-        const transfer_window_open =
-          document.getElementById("transferWindowSelect").value === "true";
+  const transfer_window_open =
+    document.getElementById("transferWindowSelect").value === "true";
 
-        const draft_auction_enabled =
-          document.getElementById("draftAuctionSelect").value === "true";
+  const draft_auction_enabled =
+    document.getElementById("draftAuctionSelect").value === "true";
 
-        let draft_random_finish_time = null;
-        let draft_auction_start_time = null;
+  let draft_random_finish_time = null;
+  let draft_auction_start_time = null;
 
-        if (draft_auction_enabled) {
-          const now = new Date();
-          const start = new Date(now);
+  if (draft_auction_enabled) {
+    const now = new Date();
+    const start = new Date(now);
 
-          if (now.getHours() < 19) {
-            start.setHours(19, 0, 0, 0);
-          } else {
-            start.setDate(start.getDate() + 1);
-            start.setHours(19, 0, 0, 0);
-          }
+    // If before 19:00 → start today at 19:00
+    if (now.getHours() < 19) {
+      start.setHours(19, 0, 0, 0);
+    }
+    // If 19:00 or later → start tomorrow at 19:00
+    else {
+      start.setDate(start.getDate() + 1);
+      start.setHours(19, 0, 0, 0);
+    }
 
-          draft_auction_start_time = start.toISOString();
+    draft_auction_start_time = start.toISOString();
 
-          const randomEnd = generateRandomDraftEndTime();
-          draft_random_finish_time = randomEnd.toISOString();
-        } else {
-          draft_random_finish_time = null;
-          draft_auction_start_time = null;
-        }
+    // Random finish time tomorrow between 18:50–18:59:59
+    const randomEnd = generateRandomDraftEndTime();
+    draft_random_finish_time = randomEnd.toISOString();
+  }
 
-        const { error } = await supabase.functions.invoke(
-          "update-global-settings",
-          {
-            body: {
-              transfer_window_open,
-              draft_auction_enabled,
-              draft_random_finish_time,
-              draft_auction_start_time
-            }
-          }
-        );
+  const { error } = await supabase.functions.invoke(
+    "update-global-settings",
+    {
+      body: {
+        transfer_window_open,
+        draft_auction_enabled,
+        draft_random_finish_time,
+        draft_auction_start_time
+      }
+    }
+  );
 
-        document.getElementById("settingsMessage").textContent =
-          error ? "❌ " + error.message : "✅ Settings updated!";
-      };
+  document.getElementById("settingsMessage").textContent =
+    error ? "❌ " + error.message : "✅ Settings updated!";
+};
 
       loadSettings();
     });
