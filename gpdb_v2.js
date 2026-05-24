@@ -82,6 +82,79 @@ async function loadDraftCreditsForOwner() {
   }
 }
 
+async function loadDraftCreditsForOwner() {
+  try {
+    // Get logged-in user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get their club short name
+    const { data: club } = await supabase
+      .from("Clubs")
+      .select("ShortName")
+      .eq("owner_id", user.id)
+      .single();
+
+    if (!club) return;
+
+    const buyerShortName = club.ShortName;
+
+    // Check if draft auction is active
+    const { data: settings } = await supabase
+      .from("global_settings")
+      .select("draft_auction_enabled")
+      .eq("id", 1)
+      .single();
+
+    if (!settings?.draft_auction_enabled) {
+      document.getElementById("draftCreditsPanel").textContent = "";
+      return;
+    }
+
+    // Get draft window times
+    const { sevenPmYesterday, sixPmToday } = getDraftWindowTimes();
+
+    // Load credits
+    const credits = await getDraftCredits(buyerShortName, sevenPmYesterday, sixPmToday);
+
+    // Count first bids
+    const { data: firsts } = await supabase
+      .from("Player_Transfer_Bids")
+      .select("direct_bid_id")
+      .eq("bidder_club_id", buyerShortName)
+      .eq("is_first_draft_bid", true)
+      .gte("bid_time", sevenPmYesterday.toISOString())
+      .lt("bid_time", sixPmToday.toISOString());
+
+    const firstCount = firsts ? firsts.length : 0;
+    const earned = firstCount * 2;
+
+    // Count joins used
+    const { data: joins } = await supabase
+      .from("Player_Transfer_Bids")
+      .select("direct_bid_id")
+      .eq("bidder_club_id", buyerShortName)
+      .eq("is_draft_join", true)
+      .eq("draft_join_consumed", true)
+      .gte("bid_time", sevenPmYesterday.toISOString())
+      .lt("bid_time", sixPmToday.toISOString());
+
+    const used = joins ? new Set(joins.map(j => j.direct_bid_id)).size : 0;
+
+    const remaining = credits;
+
+    // Update UI
+    document.getElementById("draftCreditsPanel").innerHTML = `
+      <b>Draft Credits:</b> ${remaining}<br>
+      <span style="font-size:11px;color:#aaa;">
+        Earned: ${earned} | Used: ${used}
+      </span>
+    `;
+  } catch (err) {
+    console.error("Error loading draft credits:", err);
+  }
+}
+
 /* ============================================================
    EVERYTHING ELSE MUST BE INSIDE DOMContentLoaded
    ============================================================ */
