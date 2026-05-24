@@ -328,7 +328,39 @@
       );
 
       const nowLocal = new Date();
-      const { sixPmToday } = getDraftWindowTimes();
+      const { sevenPmYesterday, sixPmToday } = getDraftWindowTimes();
+      
+      // --- Load credits for logged-in owner ---
+      const credits = await getDraftCredits(buyerShortName, sevenPmYesterday, sixPmToday);
+      
+      // We need the raw counts too:
+      const { data: firsts } = await supabase
+        .from("Player_Transfer_Bids")
+        .select("direct_bid_id")
+        .eq("bidder_club_id", buyerShortName)
+        .eq("is_first_draft_bid", true)
+        .gte("bid_time", sevenPmYesterday.toISOString())
+        .lt("bid_time", sixPmToday.toISOString());
+      
+      const { data: joins } = await supabase
+        .from("Player_Transfer_Bids")
+        .select("direct_bid_id, draft_join_consumed")
+        .eq("bidder_club_id", buyerShortName)
+        .eq("is_draft_join", true)
+        .eq("draft_join_consumed", true)
+        .gte("bid_time", sevenPmYesterday.toISOString())
+        .lt("bid_time", sixPmToday.toISOString());
+      
+      const firstCount = firsts ? firsts.length : 0;
+      const uniqueJoins = joins ? new Set(joins.map(j => j.direct_bid_id)).size : 0;
+      
+      document.getElementById("creditPanel").innerHTML = `
+        <b>Draft Credits:</b> ${credits}<br>
+        <span style="font-size:11px;color:#aaa;">
+          Earned: ${firstCount * 2} | Used: ${uniqueJoins}
+        </span>
+      `;
+
 
       for (const listing of listings) {
         const player = playerMap.get(String(listing.player_id));
