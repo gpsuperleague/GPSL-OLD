@@ -291,26 +291,27 @@
     
       draftEnabled = data?.draft_auction_enabled === true;
     
-      const startEl = document.getElementById("draftStartTime");
-    
-      if (draftEnabled) {
-        const now = new Date();
-    
-        const start = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate(),
-          19, 0, 0, 0
-        );
-    
-        if (now < start) {
-          startEl.textContent = `Draft auction begins at: ${start.toLocaleString("en-GB")}`;
-        } else {
-          startEl.textContent = `Draft auction started at: ${start.toLocaleString("en-GB")}`;
-        }
-      } else {
-        startEl.textContent = "";
-      }
+     // --- Display stored draft auction start time ---
+const startEl = document.getElementById("draftStartTime");
+
+const { data: fullSettings } = await supabase
+  .from("global_settings")
+  .select("draft_auction_start_time")
+  .eq("id", 1)
+  .single();
+
+if (draftEnabled && fullSettings?.draft_auction_start_time) {
+  const start = new Date(fullSettings.draft_auction_start_time);
+  const now = new Date();
+
+  if (now < start) {
+    startEl.textContent = `Draft auction begins at: ${start.toLocaleString("en-GB")}`;
+  } else {
+    startEl.textContent = `Draft auction started at: ${start.toLocaleString("en-GB")}`;
+  }
+} else {
+  startEl.textContent = "";
+}
     }
     async function buildNav(user) {
       const nav = document.getElementById("nav");
