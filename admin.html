@@ -276,15 +276,39 @@
 
     let draftEnabled = false;
 
-    async function loadGlobalSettings() {
+       async function loadGlobalSettings() {
       const { data } = await supabase
         .from("global_settings")
         .select("draft_auction_enabled")
         .eq("id", 1)
         .single();
-
+    
       draftEnabled = data?.draft_auction_enabled === true;
+    
+      // --- NEW: Draft auction start time display ---
+      const startEl = document.getElementById("draftStartTime");
+    
+      if (draftEnabled) {
+        const now = new Date();
+    
+        // Draft auction always begins at 19:00 on the day it is enabled
+        const start = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          19, 0, 0, 0
+        );
+    
+        if (now < start) {
+          startEl.textContent = `Draft auction begins at: ${start.toLocaleString("en-GB")}`;
+        } else {
+          startEl.textContent = `Draft auction started at: ${start.toLocaleString("en-GB")}`;
+        }
+      } else {
+        startEl.textContent = "";
+      }
     }
+
 
     async function buildNav(user) {
       const nav = document.getElementById("nav");
