@@ -226,6 +226,14 @@
       return { sevenPmYesterday, sixPmToday, sevenPmToday };
     }
 
+    async function fullClubName(short) {
+  const { data } = await supabase
+    .from("Clubs")
+    .select("Club")
+    .eq("ShortName", short)
+    .single();
+  return data ? data.Club : short;
+}
     async function loadPlayerAndBids() {
       if (!playerId) return;
 
