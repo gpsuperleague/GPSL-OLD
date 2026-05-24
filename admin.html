@@ -562,21 +562,33 @@
         let draft_auction_start_time = null;
 
         if (draft_auction_enabled) {
-          const now = new Date();
-          const start = new Date(now);
+  const now = new Date();
 
-          if (now.getHours() < 19) {
-            start.setHours(19, 0, 0, 0);
-          } else {
-            start.setDate(start.getDate() + 1);
-            start.setHours(19, 0, 0, 0);
-          }
+  // Build a UK-local 19:00 time using Europe/London offset
+  const ukNow = new Date(
+    now.toLocaleString("en-GB", { timeZone: "Europe/London" })
+  );
 
-          draft_auction_start_time = start.toISOString();
+  let ukStart = new Date(
+    ukNow.getFullYear(),
+    ukNow.getMonth(),
+    ukNow.getDate(),
+    19, 0, 0, 0
+  );
 
-          const randomEnd = generateRandomDraftEndTime();
-          draft_random_finish_time = randomEnd.toISOString();
-        } else {
+  // If already past 19:00 UK time → start tomorrow at 19:00 UK time
+  if (ukNow.getHours() >= 19) {
+    ukStart.setDate(ukStart.getDate() + 1);
+  }
+
+  // Save as ISO (Supabase stores UTC, which is correct)
+  draft_auction_start_time = ukStart.toISOString();
+
+  // Finish time logic unchanged
+  const randomEnd = generateRandomDraftEndTime();
+  draft_random_finish_time = randomEnd.toISOString();
+}
+ else {
           draft_random_finish_time = null;
           draft_auction_start_time = null;
         }
