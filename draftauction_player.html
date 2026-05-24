@@ -110,8 +110,13 @@
       const params = new URLSearchParams(window.location.search);
       playerId = params.get("player");
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location = "login.html"; return; }
+      // ⭐ Use session first to avoid false "logout"
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) {
+        window.location = "login.html";
+        return;
+      }
+      const user = session.user;
 
       await loadGlobalSettings();
       await buildNav(user);
@@ -243,7 +248,8 @@
       document.getElementById("timeRemaining").textContent =
         randomFinishTime ? `Ends around: ${randomFinishTime.toLocaleTimeString("en-GB")}` : "End time not set";
 
-      credits = await getDraftCredits(buyerShortName, sevenPmYesterday, sixPmToday);
+      const { sevenPmYesterday: winStart, sixPmToday: winSix } = getDraftWindowTimes();
+      credits = await getDraftCredits(buyerShortName, winStart, winSix);
       document.getElementById("creditsInfo").textContent =
         `Draft Credits: ${credits}`;
 
@@ -256,7 +262,6 @@
         nowLocal,
         sixPmToday
       );
-
       updateBidControlsState();
     }
 
@@ -368,7 +373,8 @@
 
       if (priorJoins && priorJoins.length) return true;
 
-      const creditsNow = await getDraftCredits(clubShortName, sevenPmYesterday, sixPmToday);
+      const { sevenPmYesterday: winStart, sixPmToday: winSix } = getDraftWindowTimes();
+      const creditsNow = await getDraftCredits(clubShortName, winStart, winSix);
       if (creditsNow <= 0) {
         document.getElementById("bidStatus").textContent =
           "You need more draft credits to join this auction.";
