@@ -181,7 +181,6 @@
           </div>
         </div>
 
-        <!-- ⭐ C1: RESET BUTTON INSERTED DIRECTLY UNDER DRAFT AUCTION DROPDOWN ⭐ -->
         <button id="resetDraftBtn" class="button" style="background:#990000; margin-top:10px;">
           Reset Draft Auction
         </button>
@@ -291,7 +290,6 @@
     
       draftEnabled = data?.draft_auction_enabled === true;
     
-      // --- Display stored draft auction start time ---
       const startEl = document.getElementById("draftStartTime");
 
       const { data: fullSettings } = await supabase
@@ -304,10 +302,12 @@
         const start = new Date(fullSettings.draft_auction_start_time);
         const now = new Date();
 
+        const displayTime = start.toLocaleString("en-GB", { timeZone: "Europe/London" });
+
         if (now < start) {
-          startEl.textContent = `Draft auction begins at: ${start.toLocaleString("en-GB")}`;
+          startEl.textContent = `Draft auction begins at: ${displayTime}`;
         } else {
-          startEl.textContent = `Draft auction started at: ${start.toLocaleString("en-GB")}`;
+          startEl.textContent = `Draft auction started at: ${displayTime}`;
         }
       } else {
         startEl.textContent = "";
@@ -550,7 +550,7 @@
           data.draft_auction_enabled ? "true" : "false";
       }
 
-      /* ⭐ FIXED — Only ONE saveSettings block exists now */
+      /* ⭐ FINAL UK‑TIMEZONE‑SAFE VERSION */
       document.getElementById("saveSettingsBtn").onclick = async () => {
         const transfer_window_open =
           document.getElementById("transferWindowSelect").value === "true";
@@ -562,35 +562,38 @@
         let draft_auction_start_time = null;
 
         if (draft_auction_enabled) {
-  const now = new Date();
+          const now = new Date();
 
-  // Build a UK-local 19:00 time using Europe/London offset
-  const ukNow = new Date(
-    now.toLocaleString("en-GB", { timeZone: "Europe/London" })
-  );
+          // SAFEST POSSIBLE UK TIMEZONE HANDLING
+          const ukFormatter = new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Europe/London",
+            year: "numeric",
+            month: "numeric",
+            day: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+            second: "numeric",
+            hour12: false
+          });
 
-  let ukStart = new Date(
-    ukNow.getFullYear(),
-    ukNow.getMonth(),
-    ukNow.getDate(),
-    19, 0, 0, 0
-  );
+          const parts = ukFormatter.formatToParts(now);
+          const get = (type) => parts.find(p => p.type === type).value;
 
-  // If already past 19:00 UK time → start tomorrow at 19:00 UK time
-  if (ukNow.getHours() >= 19) {
-    ukStart.setDate(ukStart.getDate() + 1);
-  }
+          const ukYear = parseInt(get("year"));
+          const ukMonth = parseInt(get("month")) - 1;
+          const ukDay = parseInt(get("day"));
+          const ukHour = parseInt(get("hour"));
 
-  // Save as ISO (Supabase stores UTC, which is correct)
-  draft_auction_start_time = ukStart.toISOString();
+          let ukStart = new Date(ukYear, ukMonth, ukDay, 19, 0, 0, 0);
 
-  // Finish time logic unchanged
-  const randomEnd = generateRandomDraftEndTime();
-  draft_random_finish_time = randomEnd.toISOString();
-}
- else {
-          draft_random_finish_time = null;
-          draft_auction_start_time = null;
+          if (ukHour >= 19) {
+            ukStart.setDate(ukStart.getDate() + 1);
+          }
+
+          draft_auction_start_time = ukStart.toISOString();
+
+          const randomEnd = generateRandomDraftEndTime();
+          draft_random_finish_time = randomEnd.toISOString();
         }
 
         const { error } = await supabase.functions.invoke(
@@ -613,7 +616,7 @@
     });
 
     /* ============================================================
-       RESET DRAFT AUCTION (C1 placement)
+       RESET DRAFT AUCTION
        ============================================================ */
 
     document.getElementById("resetDraftBtn").onclick = async () => {
@@ -660,4 +663,3 @@
 
 </body>
 </html>
-
