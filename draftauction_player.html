@@ -428,6 +428,7 @@
     }
 
     function setupBidControls() {
+      const minBid = currentHighestBid + 500000;
       const amountInput = document.getElementById("bidAmount");
       const quickBtn = document.getElementById("quickBidBtn");
       const incBtns = document.querySelectorAll(".inc-btn");
