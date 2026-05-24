@@ -441,15 +441,11 @@
         amountInput.value = num ? num.toLocaleString("en-GB") : "";
       });
 
-      quickBtn.onclick = () => {
-        let base = currentHighestBid || 0;
-        if (!base) {
-          base = currentHighestBid;
-        }
-        const next = base + 1000000;
-        document.getElementById("bidAmount").value =
-          next.toLocaleString("en-GB");
-      };
+     quickBtn.onclick = () => {
+  const next = minBid; // ⭐ Always jump to minimum valid bid
+  amountInput.value = next.toLocaleString("en-GB");
+};
+
 
     document.querySelectorAll(".inc-btn, .dec-btn").forEach(btn => {
   btn.addEventListener("click", () => {
