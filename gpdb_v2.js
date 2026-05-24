@@ -9,6 +9,8 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9teXlvZ2Z1bXJqb2F3ZXVhd2puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NTUxMzUsImV4cCI6MjA5MDUzMTEzNX0.7UVkpi4DOtC9VNjFLnE_ZnK6vhDtlfesZ_8rfnrkno4'
 );
 
+let draftAuctionStartTime = null;   // ⭐ NEW
+
 function getDraftWindowTimes() {
   const nowLocal = new Date();
   const today = new Date(
@@ -32,11 +34,9 @@ function getDraftWindowTimes() {
 
 async function loadDraftCreditsForOwner() {
   try {
-    // Get logged-in user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Get their club short name
     const { data: club } = await supabase
       .from("Clubs")
       .select("ShortName")
@@ -47,7 +47,6 @@ async function loadDraftCreditsForOwner() {
 
     const buyerShortName = club.ShortName;
 
-    // Check if draft auction is active
     const { data: settings } = await supabase
       .from("global_settings")
       .select("draft_auction_enabled")
@@ -59,13 +58,9 @@ async function loadDraftCreditsForOwner() {
       return;
     }
 
-    // Get draft window times
     const { sevenPmYesterday, sixPmToday } = getDraftWindowTimes();
-
-    // Load credits (remaining)
     const credits = await getDraftCreditsForGPDB(buyerShortName);
 
-    // Count first bids
     const { data: firsts } = await supabase
       .from("Player_Transfer_Bids")
       .select("direct_bid_id")
@@ -77,7 +72,6 @@ async function loadDraftCreditsForOwner() {
     const firstCount = firsts ? firsts.length : 0;
     const earned = firstCount * 2;
 
-    // Count joins used
     const { data: joins } = await supabase
       .from("Player_Transfer_Bids")
       .select("direct_bid_id")
@@ -91,7 +85,6 @@ async function loadDraftCreditsForOwner() {
 
     const remaining = credits;
 
-    // Update UI
     document.getElementById("draftCreditsPanel").innerHTML = `
       <b>Draft Credits:</b> ${remaining}<br>
       <span style="font-size:11px;color:#aaa;">
@@ -135,16 +128,11 @@ async function getDraftCreditsForGPDB(clubShortName) {
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  // Load draft credits panel
   loadDraftCreditsForOwner();
 
   /* ============================================================
      MODULE B: Column Definitions
      ============================================================ */
-
-/* ============================================================
-   MODULE B: Column Definitions
-   ============================================================ */
 
 const COLUMNS = [
   "Name",
@@ -206,13 +194,15 @@ async function loadGlobalSettings() {
     console.error("Failed to load global settings:", error);
     return {
       transferWindowOpen: false,
-      draftAuctionEnabled: false
+      draftAuctionEnabled: false,
+      draftAuctionStartTime: null
     };
   }
 
   return {
     transferWindowOpen: data.transfer_window_open,
-    draftAuctionEnabled: data.draft_auction_enabled
+    draftAuctionEnabled: data.draft_auction_enabled,
+    draftAuctionStartTime: data.draft_auction_start_time ? new Date(data.draft_auction_start_time) : null   // ⭐ NEW
   };
 }
 
@@ -281,7 +271,7 @@ async function loadPage(page = 1) {
 
 let GLOBAL_SETTINGS = null;
 let CURRENT_USER = null;
-let ACTIVE_DRAFT_PLAYERS = new Set(); // players already in active draft listings
+let ACTIVE_DRAFT_PLAYERS = new Set();
 
 async function loadUser() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -332,10 +322,19 @@ function renderTable(players) {
           }
         } else {
           const inDraft = ACTIVE_DRAFT_PLAYERS.has(String(player.Konami_ID).trim());
+
           if (inDraft) {
             bidCell = `<span class="locked-msg">In Draft Auction</span>`;
           } else if (GLOBAL_SETTINGS.draftAuctionEnabled) {
-            bidCell = `<button class="button make-offer-btn" data-player-id="${player.Konami_ID}">Make Offer</button>`;
+
+            const nowLocal = new Date();   // ⭐ NEW
+
+            if (draftAuctionStartTime && nowLocal < draftAuctionStartTime) {
+              bidCell = `<span class="locked-msg">Draft Locked</span>`;   // ⭐ NEW
+            } else {
+              bidCell = `<button class="button make-offer-btn" data-player-id="${player.Konami_ID}">Make Offer</button>`;
+            }
+
           } else {
             bidCell = `<span class="locked-msg">Draft Locked</span>`;
           }
@@ -399,12 +398,19 @@ function renderTable(players) {
 }
 
 /* ============================================================
-   MODULE G: Make Offer Modal (PESDB Card Image Source)
+   MODULE G: Make Offer Modal
    ============================================================ */
 
 let CURRENT_OFFER_PLAYER = null;
 
 async function openMakeOfferModal(playerId) {
+  const nowLocal = new Date();   // ⭐ NEW
+
+  if (draftAuctionStartTime && nowLocal < draftAuctionStartTime) {
+    alert("Draft auction has not started yet.");
+    return;
+  }
+
   const { data: player, error } = await supabase
     .from("Players")
     .select("*")
@@ -457,6 +463,14 @@ document.getElementById("cancelOfferBtn").onclick = () => {
 };
 
 document.getElementById("confirmOfferBtn").onclick = async () => {
+  const nowLocal = new Date();   // ⭐ NEW
+
+  if (draftAuctionStartTime && nowLocal < draftAuctionStartTime) {
+    document.getElementById("offerError").textContent =
+      "Draft auction has not started yet.";
+    return;
+  }
+
   const input = document.getElementById("offerAmount");
   const errorBox = document.getElementById("offerError");
 
@@ -488,7 +502,6 @@ document.getElementById("confirmOfferBtn").onclick = async () => {
 
   const myClub = clubRow.ShortName;
 
-  // Free agent but draft auction disabled
   if (!sellerClub && !GLOBAL_SETTINGS.draftAuctionEnabled) {
     errorBox.textContent = "Draft Auction is locked. You cannot bid on free agents.";
     return;
@@ -504,7 +517,6 @@ document.getElementById("confirmOfferBtn").onclick = async () => {
     return;
   }
 
-  // FREE AGENT → DRAFT AUCTION
   if (!sellerClub) {
     const result = await submitDraftBid(CURRENT_OFFER_PLAYER, offer, myClub);
 
@@ -565,8 +577,6 @@ function getDraftWindowTimes() {
   return { sevenPmYesterday, sixPmToday, sevenPmToday };
 }
 
-
-
 // randomised daily draft auction times: start 19:00 today, end random 18:50–18:59:59 tomorrow
 function getDraftAuctionTimesForNewListing() {
   const now = new Date();
@@ -592,7 +602,6 @@ function getDraftAuctionTimesForNewListing() {
 async function ensureDraftListingForPlayer(player) {
   const konamiStr = String(player.Konami_ID).trim();
 
-  // try to find existing listing
   const { data: existing, error: existingErr } = await supabase
     .from("Player_Transfer_Listings")
     .select("id, player_id")
@@ -626,7 +635,6 @@ async function ensureDraftListingForPlayer(player) {
   if (listingErr || !listing) {
     console.error("Error creating draft listing:", listingErr);
 
-    // fallback: try to fetch the latest listing for this player
     const { data: fallback, error: fallbackErr } = await supabase
       .from("Player_Transfer_Listings")
       .select("id, player_id")
@@ -674,6 +682,11 @@ async function insertDraftBid(player, amount, club, isFirst, isJoin, consumeJoin
 
 /* create listing + link bid via listing_id */
 async function submitDraftBid(player, offerAmount, buyerShortName) {
+  const nowLocal = new Date();   // ⭐ NEW
+  if (draftAuctionStartTime && nowLocal < draftAuctionStartTime) {
+    return { ok: false, msg: "Draft auction has not started yet." };   // ⭐ NEW
+  }
+
   const { data: existing, error: existingErr } = await supabase
     .from("Player_Transfer_Bids")
     .select("bidder_club_id")
@@ -977,6 +990,7 @@ function renderPagination() {
 async function init() {
   await loadUser();
   GLOBAL_SETTINGS = await loadGlobalSettings();
+  draftAuctionStartTime = GLOBAL_SETTINGS.draftAuctionStartTime || null;   // ⭐ NEW
 
   setupControls();
   setupFilters();
