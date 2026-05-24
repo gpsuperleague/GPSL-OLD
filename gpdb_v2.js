@@ -9,6 +9,27 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9teXlvZ2Z1bXJqb2F3ZXVhd2puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NTUxMzUsImV4cCI6MjA5MDUzMTEzNX0.7UVkpi4DOtC9VNjFLnE_ZnK6vhDtlfesZ_8rfnrkno4'
 );
 
+function getDraftWindowTimes() {
+  const nowLocal = new Date();
+  const today = new Date(
+    nowLocal.getFullYear(),
+    nowLocal.getMonth(),
+    nowLocal.getDate()
+  );
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+  const sevenPmYesterday = new Date(yesterday);
+  sevenPmYesterday.setHours(19, 0, 0, 0);
+
+  const sixPmToday = new Date(today);
+  sixPmToday.setHours(18, 0, 0, 0);
+
+  const sevenPmToday = new Date(today);
+  sevenPmToday.setHours(19, 0, 0, 0);
+
+  return { sevenPmYesterday, sixPmToday, sevenPmToday };
+}
+
 async function loadDraftCreditsForOwner() {
   try {
     // Get logged-in user
