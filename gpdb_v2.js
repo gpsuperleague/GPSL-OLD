@@ -330,13 +330,13 @@ function renderTable(players) {
             const nowLocal = new Date();   // ⭐ NEW
 
             if (draftAuctionStartTime && nowLocal < draftAuctionStartTime) {
-              bidCell = `<span class="locked-msg">Draft Locked</span>`;   // ⭐ NEW
+              bidCell = `<span class="locked-msg">Draft Closed</span>`;   // ⭐ NEW
             } else {
               bidCell = `<button class="button make-offer-btn" data-player-id="${player.Konami_ID}">Make Offer</button>`;
             }
 
           } else {
-            bidCell = `<span class="locked-msg">Draft Locked</span>`;
+            bidCell = `<span class="locked-msg">Draft Closed</span>`;
           }
         }
       }
