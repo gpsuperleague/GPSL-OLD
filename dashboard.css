@@ -648,3 +648,8 @@ table.gpsl-table td {
   background-image: url("images/panel_bg/stadium.png");
 }
 
+/* Finances watermark */
+.tile-finances::after {
+  background-image: url("images/panel_bg/finances.png");
+}
+
