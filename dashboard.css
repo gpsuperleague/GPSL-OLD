@@ -645,6 +645,6 @@ table.gpsl-table td {
 
 /* Stadium watermark */
 .tile-stadium::after {
-  background-image: url("images/panel_bg/Stadium.png");
+  background-image: url("images/panel_bg/stadium.png");
 }
 
