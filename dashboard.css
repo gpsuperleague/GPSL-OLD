@@ -588,7 +588,7 @@ table.gpsl-table td {
 
 /* Specific panel images */
 .panel-club::after {
-  background-image: url("images/panel_bg/club.png");
+  background-image: url("images/panel_bg/Club_Details.png");
 }
 
 .panel-stadium::after {
