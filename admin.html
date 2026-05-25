@@ -325,10 +325,7 @@
       if (draftEnabled && fullSettings?.draft_auction_start_time) {
         const start = parseUTC(fullSettings.draft_auction_start_time);
         const nowUK = nowInUK();
-
-        const displayTime = start.toLocaleString("en-GB", {
-          timeZone: "Europe/London"
-        });
+        const displayTime = start.toLocaleString("en-GB");
 
         if (nowUK < start) {
           startEl.textContent = `Draft auction begins at: ${displayTime}`;
