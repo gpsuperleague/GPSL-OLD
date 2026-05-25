@@ -624,7 +624,7 @@ table.gpsl-table td {
   content: "";
   position: absolute;
   inset: 0;
-  background-size: 80%;
+  background-size: cover; /* FULL COVER */
   background-position: center;
   background-repeat: no-repeat;
   opacity: 0.12;
