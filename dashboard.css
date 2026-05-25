@@ -54,11 +54,13 @@
    ============================ */
 
 #headerRight {
-  width: 320px;
-  background: #222;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: auto;
+  padding: 0;
+  background: none;
+  border: none;
 }
 
 .panelTitle {
