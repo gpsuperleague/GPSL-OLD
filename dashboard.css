@@ -641,5 +641,10 @@ table.gpsl-table td {
 /* Club Details watermark */
 .tile-club::after {
   background-image: url("images/panel_bg/Club_Details.png");
+}
+
+/* Stadium watermark */
+.tile-stadium::after {
   background-image: url("images/panel_bg/Stadium.png");
 }
+
