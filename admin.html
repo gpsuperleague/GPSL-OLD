@@ -267,6 +267,7 @@
       </div>
     </div>
   </div>
+
   <!-- ADMIN LOGIC + UPDATED NAV -->
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -560,7 +561,6 @@
           : "✅ Reset email sent!";
       };
     });
-
     /* ============================================================
        DRAFT AUCTION SETTINGS
        ============================================================ */
@@ -601,7 +601,7 @@
       }
 
       /* ============================================================
-         SAVE SETTINGS — UK‑SAFE VERSION
+         SAVE SETTINGS — FINAL UK‑SAFE VERSION
          ============================================================ */
 
       document.getElementById("saveSettingsBtn").onclick = async () => {
@@ -615,8 +615,9 @@
         let draft_auction_start_time = null;
 
         if (draft_auction_enabled) {
-          const now = new Date();
 
+          // Get current UK date/time components
+          const now = new Date();
           const ukFormatter = new Intl.DateTimeFormat("en-GB", {
             timeZone: "Europe/London",
             year: "numeric",
@@ -636,14 +637,15 @@
           const ukDay = parseInt(get("day"));
           const ukHour = parseInt(get("hour"));
 
-          let ukStart = new Date(ukYear, ukMonth, ukDay, 19, 0, 0, 0);
+          // If it's already past 19:00 UK time, schedule for tomorrow
+          const targetDay = ukHour >= 19 ? ukDay + 1 : ukDay;
 
-          if (ukHour >= 19) {
-            ukStart.setDate(ukStart.getDate() + 1);
-          }
+          // 19:00 UK time = 18:00 UTC
+          const ukStart = new Date(Date.UTC(ukYear, ukMonth, targetDay, 18, 0, 0, 0));
 
           draft_auction_start_time = ukStart.toISOString();
 
+          // Random finish time (still based on local date, but stored as UTC)
           const randomEnd = generateRandomDraftEndTime();
           draft_random_finish_time = randomEnd.toISOString();
         }
@@ -715,4 +717,3 @@
 
 </body>
 </html>
-
