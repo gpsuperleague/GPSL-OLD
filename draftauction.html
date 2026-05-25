@@ -152,7 +152,28 @@
     let buyerShortName = null;
     let draftEnabled = false;
     let randomFinishTime = null;
-    let draftAuctionStartTime = null; // ⭐ NEW: holds official start time
+    let draftAuctionStartTime = null; // official start time (UTC parsed safely)
+
+    /* ============================================================
+       SAFE UTC PARSER + UK TIME HELPERS
+       ============================================================ */
+
+    function parseUTC(iso) {
+      const d = new Date(iso);
+      return new Date(
+        d.getUTCFullYear(),
+        d.getUTCMonth(),
+        d.getUTCDate(),
+        d.getUTCHours(),
+        d.getUTCMinutes(),
+        d.getUTCSeconds()
+      );
+    }
+
+    function nowInUK() {
+      // same trick as admin.html: compare in UTC-safe space
+      return parseUTC(new Date().toISOString());
+    }
 
     /* ============================================================
        SHARED CREDIT FUNCTIONS (GPDB VERSION)
@@ -211,7 +232,6 @@
           .select("ShortName")
           .eq("owner_id", user.id)
           .single();
-
         if (!club) return;
 
         const buyerShortName = club.ShortName;
@@ -277,7 +297,7 @@
       await buildNav(user);
       await loadBuyerClubShortName(user.id);
 
-      /* ⭐ unified credit panel */
+      // unified credit panel
       await loadDraftCreditsForOwner();
 
       await loadDraftAuctions();
@@ -303,22 +323,22 @@
 
       draftEnabled = data.draft_auction_enabled === true;
 
-      // ⭐ NEW: load official start time
+      // parse official times as UTC-safe
       draftAuctionStartTime = data.draft_auction_start_time
-        ? new Date(data.draft_auction_start_time)
+        ? parseUTC(data.draft_auction_start_time)
         : null;
 
       randomFinishTime = data.draft_random_finish_time
-        ? new Date(data.draft_random_finish_time)
+        ? parseUTC(data.draft_random_finish_time)
         : null;
 
-      const now = new Date();
+      const nowUK = nowInUK();
 
       if (!draftEnabled) {
         statusEl.textContent = "Draft auction is currently disabled.";
-      } else if (draftAuctionStartTime && now < draftAuctionStartTime) {
+      } else if (draftAuctionStartTime && nowUK < draftAuctionStartTime) {
         statusEl.textContent = "Draft auction has not started yet.";
-      } else if (randomFinishTime && now >= randomFinishTime) {
+      } else if (randomFinishTime && nowUK >= randomFinishTime) {
         statusEl.textContent = "Draft auction has ended. Results are final.";
       } else {
         statusEl.textContent =
@@ -366,7 +386,7 @@
     }
 
     /* ============================================================
-       EXISTING AUCTION LOGIC (UNCHANGED EXCEPT FOR START-TIME CHECK)
+       EXISTING AUCTION LOGIC (BST-SAFE START/END CHECKS)
        ============================================================ */
 
     async function loadDraftAuctions() {
@@ -408,7 +428,6 @@
       const playerMap = new Map(players.map(p => [String(p.Konami_ID), p]));
 
       const listingIds = listings.map(l => l.id);
-
       const { data: bids, error: bidsErr } = await supabase
         .from("Player_Transfer_Bids")
         .select("listing_id, direct_bid_id, bidder_club_id, bid_amount, bid_time")
@@ -430,7 +449,7 @@
         (clubs || []).map(c => [c.ShortName, c.Club])
       );
 
-      const nowLocal = new Date();
+      const nowUK = nowInUK();
       const { sevenPmYesterday, sixPmToday } = getDraftWindowTimes();
 
       for (const listing of listings) {
@@ -452,12 +471,11 @@
         const canBid = await canClubBidOnPlayer(
           buyerShortName,
           player.Konami_ID,
-          nowLocal,
+          nowUK,
           sixPmToday
         );
 
-        const now = new Date();
-        const auctionEnded = randomFinishTime && now >= randomFinishTime;
+        const auctionEnded = randomFinishTime && nowUK >= randomFinishTime;
 
         const bidBtnClass = !auctionEnded && canBid ? "enabled" : "disabled";
         const bidBtnLabel = auctionEnded ? "Ended" : (canBid ? "Bid" : "Locked");
@@ -483,7 +501,7 @@
           <td>₿ ${Number(highestAmount).toLocaleString("en-GB")}</td>
           <td>${leadingClubFull}</td>
           <td class="time-cell">
-            ${formatTimeRemaining(nowLocal)}
+            ${formatTimeRemaining(nowUK)}
           </td>
           <td>
             <button
@@ -515,18 +533,18 @@
       });
     }
 
-    async function canClubBidOnPlayer(clubShortName, konamiId, nowLocal, sixPmToday) {
+    async function canClubBidOnPlayer(clubShortName, konamiId, nowUK, sixPmToday) {
       if (!draftEnabled || !clubShortName || !randomFinishTime) return false;
 
-      // ⭐ NEW: block all bids before official start time
-      if (draftAuctionStartTime && nowLocal < draftAuctionStartTime) return false;
+      // block all bids before official start time
+      if (draftAuctionStartTime && nowUK < draftAuctionStartTime) return false;
 
-      if (nowLocal >= randomFinishTime) return false;
+      if (nowUK >= randomFinishTime) return false;
 
       const { sevenPmYesterday, sixPmToday: sixPm } = getDraftWindowTimes();
 
       // must have at least one draft bid before 6pm to bid after 6pm
-      if (nowLocal >= sixPmToday) {
+      if (nowUK >= sixPmToday) {
         const { data: pre6Bids } = await supabase
           .from("Player_Transfer_Bids")
           .select("bid_id")
@@ -595,9 +613,9 @@
       return (firstCount * 2) - uniqueJoins;
     }
 
-    function formatTimeRemaining(nowLocal) {
+    function formatTimeRemaining(nowUK) {
       if (!randomFinishTime) return "-";
-      const diffMs = randomFinishTime - nowLocal;
+      const diffMs = randomFinishTime - nowUK;
       if (diffMs <= 0) return "Ended";
 
       const totalSecs = Math.floor(diffMs / 1000);
@@ -610,13 +628,13 @@
 
     function updateCountdowns() {
       if (!randomFinishTime) return;
-      const nowLocal = new Date();
+      const nowUK = nowInUK();
       const cells = document.querySelectorAll(".time-cell");
       cells.forEach(cell => {
-        cell.textContent = formatTimeRemaining(nowLocal);
+        cell.textContent = formatTimeRemaining(nowUK);
       });
 
-      if (nowLocal >= randomFinishTime) {
+      if (nowUK >= randomFinishTime) {
         const statusEl = document.getElementById("draftStatus");
         statusEl.textContent = "Draft auction has ended. Results are final.";
 
