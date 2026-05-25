@@ -267,7 +267,6 @@
       </div>
     </div>
   </div>
-
   <!-- ADMIN LOGIC + UPDATED NAV -->
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -279,6 +278,30 @@
 
     window.supabase = supabase;
 
+    /* ============================================================
+       SAFE UTC PARSER + UK TIME HELPERS
+       ============================================================ */
+
+    function parseUTC(iso) {
+      const d = new Date(iso);
+      return new Date(
+        d.getUTCFullYear(),
+        d.getUTCMonth(),
+        d.getUTCDate(),
+        d.getUTCHours(),
+        d.getUTCMinutes(),
+        d.getUTCSeconds()
+      );
+    }
+
+    function nowInUK() {
+      return parseUTC(new Date().toISOString());
+    }
+
+    /* ============================================================
+       LOAD GLOBAL SETTINGS + DISPLAY START TIME
+       ============================================================ */
+
     let draftEnabled = false;
 
     async function loadGlobalSettings() {
@@ -287,9 +310,9 @@
         .select("draft_auction_enabled")
         .eq("id", 1)
         .single();
-    
+
       draftEnabled = data?.draft_auction_enabled === true;
-    
+
       const startEl = document.getElementById("draftStartTime");
 
       const { data: fullSettings } = await supabase
@@ -299,12 +322,14 @@
         .single();
 
       if (draftEnabled && fullSettings?.draft_auction_start_time) {
-        const start = new Date(fullSettings.draft_auction_start_time);
-        const now = new Date();
+        const start = parseUTC(fullSettings.draft_auction_start_time);
+        const nowUK = nowInUK();
 
-        const displayTime = start.toLocaleString("en-GB", { timeZone: "Europe/London" });
+        const displayTime = start.toLocaleString("en-GB", {
+          timeZone: "Europe/London"
+        });
 
-        if (now < start) {
+        if (nowUK < start) {
           startEl.textContent = `Draft auction begins at: ${displayTime}`;
         } else {
           startEl.textContent = `Draft auction started at: ${displayTime}`;
@@ -313,6 +338,11 @@
         startEl.textContent = "";
       }
     }
+
+    /* ============================================================
+       NAVIGATION
+       ============================================================ */
+
     async function buildNav(user) {
       const nav = document.getElementById("nav");
 
@@ -350,6 +380,10 @@
       };
     }
 
+    /* ============================================================
+       AUTH + PAGE INIT
+       ============================================================ */
+
     document.addEventListener("DOMContentLoaded", async () => {
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -371,7 +405,10 @@
       document.getElementById("adminPanel").style.display = "block";
     });
 
-    /* SEASON ROLLOVER LOGIC */
+    /* ============================================================
+       SEASON ROLLOVER
+       ============================================================ */
+
     document.addEventListener("DOMContentLoaded", () => {
       const modal = document.getElementById("seasonRolloverModalBackdrop");
       const status = document.getElementById("rolloverStatus");
@@ -396,11 +433,15 @@
       };
     });
 
-    /* OWNER LIST LOADING */
+    /* ============================================================
+       OWNER LIST LOADING
+       ============================================================ */
+
     document.addEventListener("DOMContentLoaded", async () => {
       const dropdown = document.getElementById("updateOwnerSelect");
 
-      const { data: ownerData, error: ownerError } = await supabase.functions.invoke("list-owners");
+      const { data: ownerData, error: ownerError } =
+        await supabase.functions.invoke("list-owners");
 
       if (ownerError || !ownerData || !ownerData.users) {
         dropdown.innerHTML = `<option>Error loading owners</option>`;
@@ -433,7 +474,10 @@
       });
     });
 
-    /* ADD OWNER */
+    /* ============================================================
+       ADD OWNER
+       ============================================================ */
+
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("addOwnerBtn");
       const status = document.getElementById("ownerStatus");
@@ -460,7 +504,10 @@
       };
     });
 
-    /* UPDATE OWNER EMAIL */
+    /* ============================================================
+       UPDATE OWNER EMAIL
+       ============================================================ */
+
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("updateEmailBtn");
       const status = document.getElementById("updateEmailStatus");
@@ -486,7 +533,10 @@
       };
     });
 
-    /* RESET OWNER PASSWORD */
+    /* ============================================================
+       RESET OWNER PASSWORD
+       ============================================================ */
+
     document.addEventListener("DOMContentLoaded", () => {
       const btn = document.getElementById("resetPasswordBtn");
       const status = document.getElementById("resetPasswordStatus");
@@ -511,9 +561,9 @@
       };
     });
 
-    /* ----------------------------- */
-    /* DRAFT AUCTION SETTINGS LOGIC  */
-    /* ----------------------------- */
+    /* ============================================================
+       DRAFT AUCTION SETTINGS
+       ============================================================ */
 
     function generateRandomDraftEndTime() {
       const now = new Date();
@@ -550,7 +600,10 @@
           data.draft_auction_enabled ? "true" : "false";
       }
 
-      /* ⭐ FINAL UK‑TIMEZONE‑SAFE VERSION */
+      /* ============================================================
+         SAVE SETTINGS — UK‑SAFE VERSION
+         ============================================================ */
+
       document.getElementById("saveSettingsBtn").onclick = async () => {
         const transfer_window_open =
           document.getElementById("transferWindowSelect").value === "true";
@@ -564,7 +617,6 @@
         if (draft_auction_enabled) {
           const now = new Date();
 
-          // SAFEST POSSIBLE UK TIMEZONE HANDLING
           const ukFormatter = new Intl.DateTimeFormat("en-GB", {
             timeZone: "Europe/London",
             year: "numeric",
@@ -663,3 +715,4 @@
 
 </body>
 </html>
+
