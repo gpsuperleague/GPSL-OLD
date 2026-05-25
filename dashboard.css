@@ -653,3 +653,8 @@ table.gpsl-table td {
   background-image: url("images/panel_bg/Finances.png");
 }
 
+/* Squad watermark */
+.tile-squad::after {
+  background-image: url("images/panel_bg/Squad.png");
+}
+
