@@ -197,7 +197,7 @@
 
 table.gpsl-table {
   width: 100%;
-  border-collapse: separate;   /* IMPORTANT: allows row height to expand */
+  border-collapse: separate;
   font-size: 14px;
   background: #1a1a1a;
 }
@@ -212,11 +212,11 @@ table.gpsl-table th {
 table.gpsl-table td {
   padding: 8px;
   border-bottom: 1px solid #333;
-  overflow: visible !important;   /* FIX: prevents image clipping */
+  overflow: visible !important;
 }
 
 table.gpsl-table tr {
-  height: auto !important;        /* FIX: allow tall images */
+  height: auto !important;
   overflow: visible !important;
 }
 
@@ -486,9 +486,9 @@ table.gpsl-table tr:nth-child(even) {
    ============================================================ */
 
 .player-thumb {
-  height: 130px;        /* big portrait */
+  height: 130px;
   width: auto;
-  object-fit: contain;  /* never crop */
+  object-fit: contain;
   background: #000;
   border-radius: 6px;
   border: 1px solid #333;
@@ -506,4 +506,56 @@ table.gpsl-table tr,
 table.gpsl-table td {
   height: auto !important;
   overflow: visible !important;
+}
+
+
+/* ============================================================
+   NEW NAVIGATION BAR (MODERN STYLE)
+   ============================================================ */
+
+#nav {
+  padding: 15px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+/* Modern nav buttons */
+#nav .button {
+  display: inline-block;
+  padding: 10px 18px;
+  margin: 0 6px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #ff9900;
+  text-decoration: none;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+/* Hover effect */
+#nav .button:hover {
+  background: #333;
+  border-color: #ff9900;
+  transform: scale(1.05);
+}
+
+/* Active page highlight */
+#nav .button.active {
+  background: #ff9900;
+  color: #111;
+  border-color: #ff9900;
+}
+
+/* Logout button override */
+#nav #logoutBtn {
+  background: #aa2222;
+  border-color: #cc3333;
+  color: #fff;
+}
+
+#nav #logoutBtn:hover {
+  background: #cc3333;
+  border-color: #ff4444;
 }
