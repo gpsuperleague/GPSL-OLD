@@ -1,0 +1,68 @@
+<script>
+  const CURRENT_PAGE = "squad";
+</script>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Squad</title>
+
+  <link rel="stylesheet" href="dashboard.css">
+
+  <style>
+    .section-header {
+      color: #ff9900;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="nav"></div>
+
+  <div class="page-container">
+
+    <!-- HEADER -->
+    <div id="headerContainer">
+      <div id="headerLeft">
+        <img id="clubBadgeHeader" src="" alt="Club Badge">
+        <div>
+          <h1 id="dashboardTitle">Squad</h1>
+          <div id="userEmail"></div>
+        </div>
+      </div>
+
+      <div id="headerRight">
+        <div id="draftCountdown"></div>
+      </div>
+    </div>
+
+    <!-- LINKS TO SUBPAGES -->
+    <div class="tile-grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
+
+      <div class="tile" onclick="location.href='squad_firstteam.html'">
+        First Team
+      </div>
+
+      <div class="tile" onclick="location.href='squad_youth.html'">
+        Youth Squad
+      </div>
+
+      <div class="tile" onclick="location.href='squad_development.html'">
+        Development
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- GLOBAL SCRIPTS -->
+  <script type="module" src="global.js"></script>
+  <script type="module" src="supabase_client.js"></script>
+  <script type="module" src="global_ui.js"></script>
+
+</body>
+</html>
