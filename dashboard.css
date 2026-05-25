@@ -610,3 +610,35 @@ table.gpsl-table td {
 .panel-fixtures::after {
   background-image: url("images/panel_bg/fixtures.png");
 }
+
+/* ==========================================
+   WATERMARK FOR CLUB DETAILS TILE ONLY
+   ========================================== */
+
+.tile {
+  position: relative;
+  overflow: hidden;
+}
+
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: 80%;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  filter: grayscale(100%) contrast(80%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tile > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Club Details watermark */
+.tile-club::after {
+  background-image: url("images/panel_bg/Club_Details.png");
+}
