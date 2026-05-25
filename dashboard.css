@@ -559,3 +559,54 @@ table.gpsl-table td {
   background: #cc3333;
   border-color: #ff4444;
 }
+
+/* ============================================================
+   PANEL BACKGROUND WATERMARKS
+   ============================================================ */
+
+.panel-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.panel-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.12;        /* watermark strength */
+  pointer-events: none;
+  z-index: 0;
+  filter: grayscale(100%) contrast(80%);
+}
+
+.panel-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Specific panel images */
+.panel-club::after {
+  background-image: url("images/panel_bg/club.png");
+}
+
+.panel-stadium::after {
+  background-image: url("images/panel_bg/stadium.png");
+}
+
+.panel-finances::after {
+  background-image: url("images/panel_bg/finances.png");
+}
+
+.panel-squad::after {
+  background-image: url("images/panel_bg/squad.png");
+}
+
+.panel-transfer::after {
+  background-image: url("images/panel_bg/transfer.png");
+}
+
+.panel-fixtures::after {
+  background-image: url("images/panel_bg/fixtures.png");
+}
