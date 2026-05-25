@@ -658,3 +658,7 @@ table.gpsl-table td {
   background-image: url("images/panel_bg/Squad.png");
 }
 
+/* Transfer Centre watermark */
+.tile-transfer::after {
+  background-image: url("images/panel_bg/Transfer.png");
+}
