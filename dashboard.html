@@ -54,7 +54,7 @@
     #headerContainer {
       display: flex;
       justify-content: space-between;
-      align-items: center; /* vertical centering */
+      align-items: center;
       gap: 20px;
       margin-bottom: 20px;
     }
@@ -69,25 +69,27 @@
       object-fit: contain;
     }
 
-    /* COUNTDOWN PANEL (full panel style) */
+    /* CLEAN COUNTDOWN BOX */
     #headerRight {
       display: flex;
       align-items: center;
       justify-content: flex-end;
       flex: 1;
     }
-   #draftCountdown {
-  background: #1a1a1a;          /* same as your inner panels */
-  border: 1px solid #333;       /* same border as inner panels */
-  border-radius: 8px;
-  padding: 12px 18px;           /* smaller, cleaner padding */
-  min-width: 180px;             /* matches inner panel proportions */
-  text-align: center;
-  color: #ff9900;
-  font-weight: bold;
-  font-size: 15px;
-  margin-right: 10px;
-}
+
+    #draftCountdown {
+      background: #1a1a1a !important;
+      border: 1px solid #333 !important;
+      border-radius: 8px !important;
+      padding: 10px 16px !important;
+      min-width: 170px !important;
+      text-align: center !important;
+      color: #ff9900 !important;
+      font-weight: bold !important;
+      font-size: 15px !important;
+      margin-right: 10px !important;
+      box-shadow: none !important;
+    }
 
     .panel, .card {
       background: #1a1a1a;
@@ -147,7 +149,7 @@
 
   <div class="page-container">
 
-    <!-- HEADER WITH COUNTDOWN -->
+    <!-- HEADER WITH CLEAN COUNTDOWN -->
     <div id="headerContainer">
       <div id="headerLeft">
         <img id="clubBadgeHeader" src="" alt="Club Badge">
@@ -209,7 +211,7 @@
       </div>
     </div>
 
-    <!-- MAIN CONTENT -->
+        <!-- MAIN CONTENT -->
     <div id="mainContent">
       <div id="leftColumn">
         <h2 class="section-header">Squad</h2>
@@ -341,7 +343,6 @@
     </div>
 
   </div>
-
   <!-- LIST PLAYER MODAL -->
   <div id="list-player-modal-backdrop">
     <div id="list-player-modal">
@@ -503,7 +504,7 @@
       }
 
       await loadGlobalSettings();
-            await buildNav(user);
+      await buildNav(user);
 
       document.getElementById("userEmail").textContent = user.email;
 
@@ -542,3 +543,4 @@
 
 </body>
 </html>
+
