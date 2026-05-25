@@ -650,6 +650,6 @@ table.gpsl-table td {
 
 /* Finances watermark */
 .tile-finances::after {
-  background-image: url("images/panel_bg/finances.png");
+  background-image: url("images/panel_bg/Club_Finances.png");
 }
 
