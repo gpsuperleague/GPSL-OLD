@@ -299,43 +299,52 @@
       return parseUTC(new Date().toISOString());
     }
 
-    /* ============================================================
-       LOAD GLOBAL SETTINGS + DISPLAY START TIME
-       ============================================================ */
+   /* ============================================================
+   LOAD GLOBAL SETTINGS + DISPLAY START TIME
+   ============================================================ */
 
-    let draftEnabled = false;
+let draftEnabled = false;
 
-    async function loadGlobalSettings() {
-      const { data } = await supabase
-        .from("global_settings")
-        .select("draft_auction_enabled")
-        .eq("id", 1)
-        .single();
+async function loadGlobalSettings() {
+  const { data } = await supabase
+    .from("global_settings")
+    .select("draft_auction_enabled")
+    .eq("id", 1)
+    .single();
 
-      draftEnabled = data?.draft_auction_enabled === true;
+  draftEnabled = data?.draft_auction_enabled === true;
 
-      const startEl = document.getElementById("draftStartTime");
+  const startEl = document.getElementById("draftStartTime");
 
-      const { data: fullSettings } = await supabase
-        .from("global_settings")
-        .select("draft_auction_start_time")
-        .eq("id", 1)
-        .single();
+  const { data: fullSettings } = await supabase
+    .from("global_settings")
+    .select("draft_auction_start_time")
+    .eq("id", 1)
+    .single();
 
-      if (draftEnabled && fullSettings?.draft_auction_start_time) {
-        const start = parseUTC(fullSettings.draft_auction_start_time);
-        const nowUK = nowInUK();
-        const displayTime = start.toLocaleString("en-GB");
+  // ⭐ Diagnostic: see EXACT string Supabase returns
+  console.log("ADMIN RAW VALUE:", fullSettings?.draft_auction_start_time);
 
-        if (nowUK < start) {
-          startEl.textContent = `Draft auction begins at: ${displayTime}`;
-        } else {
-          startEl.textContent = `Draft auction started at: ${displayTime}`;
-        }
-      } else {
-        startEl.textContent = "";
-      }
+  if (draftEnabled && fullSettings?.draft_auction_start_time) {
+
+    // ⭐ DO NOT parse manually — let JS handle BST correctly
+    const start = new Date(fullSettings.draft_auction_start_time);
+
+    const nowUK = nowInUK();
+
+    // ⭐ This now correctly shows 19:00 in BST
+    const displayTime = start.toLocaleString("en-GB");
+
+    if (nowUK < start) {
+      startEl.textContent = `Draft auction begins at: ${displayTime}`;
+    } else {
+      startEl.textContent = `Draft auction started at: ${displayTime}`;
     }
+
+  } else {
+    startEl.textContent = "";
+  }
+}
 
     /* ============================================================
        NAVIGATION
