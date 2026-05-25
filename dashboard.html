@@ -1,10 +1,12 @@
-<script>
-  const CURRENT_PAGE = "dashboard";
-</script>
-
 <!DOCTYPE html>
 <html>
 <head>
+
+  <!-- CURRENT PAGE MUST BE DEFINED BEFORE ANY MODULE SCRIPTS -->
+  <script>
+    window.CURRENT_PAGE = "dashboard";
+  </script>
+
   <meta charset="UTF-8">
   <title>GPSL Dashboard</title>
 
@@ -169,9 +171,10 @@
   </div>
 
   <!-- GLOBAL JS -->
-  <script type="module" src="global.js"></script>
   <script type="module" src="supabase_client.js"></script>
+  <script type="module" src="global.js"></script>
   <script type="module" src="global_ui.js"></script>
+  <script type="module" src="clubs_lookup.js"></script>
 
   <!-- DASHBOARD JS -->
   <script type="module" src="dashboard.js"></script>
