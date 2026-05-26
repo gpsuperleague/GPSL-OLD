@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("userEmail").textContent = user.email;
 
-  // Load club for this user (same as legacy inline script)
+  // Load club for this user
   const { data: club, error } = await supabase
     .from("Clubs")
     .select("*")
@@ -46,9 +46,55 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadActiveListingsCache();
   await loadSquad();
+
+  // ============================
+  // SAFE BUTTON WIRING
+  // ============================
+  const dec500 = document.getElementById("dec-500k-list");
+  const dec1m = document.getElementById("dec-1m-list");
+  const dec5m = document.getElementById("dec-5m-list");
+
+  const inc500 = document.getElementById("inc-500k-list");
+  const inc1m = document.getElementById("inc-1m-list");
+  const inc5m = document.getElementById("inc-5m-list");
+
+  const useMV = document.getElementById("useMarketValueBtn");
+  const useMax = document.getElementById("useMaxReserveBtn");
+
+  const reserveInput = document.getElementById("reserveInput");
+  const cancelBtn = document.getElementById("cancelListBtn");
+  const confirmBtn = document.getElementById("confirmListBtn");
+
+  if (dec500) dec500.onclick = () => addReserveIncrement(-500000);
+  if (dec1m) dec1m.onclick = () => addReserveIncrement(-1000000);
+  if (dec5m) dec5m.onclick = () => addReserveIncrement(-5000000);
+
+  if (inc500) inc500.onclick = () => addReserveIncrement(500000);
+  if (inc1m) inc1m.onclick = () => addReserveIncrement(1000000);
+  if (inc5m) inc5m.onclick = () => addReserveIncrement(5000000);
+
+  if (useMV) useMV.onclick = () => {
+    if (!selectedPlayerForListing) return;
+    reserveInput.value = formatNumeric(selectedPlayerForListing.market_value);
+    validateReserveInput();
+  };
+
+  if (useMax) useMax.onclick = () => {
+    if (!selectedPlayerForListing) return;
+    reserveInput.value = formatNumeric(selectedPlayerForListing.Maximum_Reserve_Price);
+    validateReserveInput();
+  };
+
+  if (reserveInput) reserveInput.oninput = () => validateReserveInput();
+
+  if (cancelBtn) cancelBtn.onclick = () => {
+    document.getElementById("list-player-modal-backdrop").style.display = "none";
+  };
+
+  if (confirmBtn) confirmBtn.onclick = validateAndCreateListing;
 });
 
-// ACTIVE LISTINGS CACHE (for status column)
+// ACTIVE LISTINGS CACHE
 async function loadActiveListingsCache() {
   const { data } = await supabase
     .from("Player_Transfer_Listings")
@@ -136,7 +182,7 @@ function renderSquad(players) {
   applyPESDBRowClicks("squad-body");
 }
 
-// ACTION HANDLER (global for <select>)
+// ACTION HANDLER
 window.handlePlayerAction = function(playerId, action) {
   if (action === "list") {
     openListPlayerModalByID({ Konami_ID: playerId });
@@ -181,7 +227,7 @@ function openListPlayerModal(player) {
   document.getElementById("list-player-modal-backdrop").style.display = "flex";
 }
 
-// RESERVE INPUT + VALIDATION (unchanged from legacy)
+// RESERVE INPUT + VALIDATION
 function parseNumericInput(value) {
   return Number(String(value).replace(/,/g, "")) || 0;
 }
@@ -256,38 +302,7 @@ function addReserveIncrement(amount) {
   validateReserveInput();
 }
 
-// BUTTON WIRING
-document.getElementById("dec-500k-list").onclick = () => addReserveIncrement(-500000);
-document.getElementById("dec-1m-list").onclick = () => addReserveIncrement(-1000000);
-document.getElementById("dec-5m-list").onclick = () => addReserveIncrement(-5000000);
-
-document.getElementById("inc-500k-list").onclick = () => addReserveIncrement(500000);
-document.getElementById("inc-1m-list").onclick = () => addReserveIncrement(1000000);
-document.getElementById("inc-5m-list").onclick = () => addReserveIncrement(5000000);
-
-document.getElementById("useMarketValueBtn").onclick = () => {
-  if (!selectedPlayerForListing) return;
-  const input = document.getElementById("reserveInput");
-  input.value = formatNumeric(selectedPlayerForListing.market_value);
-  validateReserveInput();
-};
-
-document.getElementById("useMaxReserveBtn").onclick = () => {
-  if (!selectedPlayerForListing) return;
-  const input = document.getElementById("reserveInput");
-  input.value = formatNumeric(selectedPlayerForListing.Maximum_Reserve_Price);
-  validateReserveInput();
-};
-
-document.getElementById("reserveInput").oninput = () => validateReserveInput();
-
-document.getElementById("cancelListBtn").onclick = () => {
-  document.getElementById("list-player-modal-backdrop").style.display = "none";
-};
-
-document.getElementById("confirmListBtn").onclick = validateAndCreateListing;
-
-// CREATE LISTING (trimmed: no loadListings, only squad + cache)
+// CREATE LISTING
 async function validateAndCreateListing() {
   const input = document.getElementById("reserveInput");
   const reserve = parseNumericInput(input.value);
@@ -355,7 +370,7 @@ async function validateAndCreateListing() {
   await loadSquad();
 }
 
-// UNIVERSAL PESDB ROW CLICK HANDLER (copied from legacy)
+// PESDB CLICK HANDLER
 function applyPESDBRowClicks(tbodyId) {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
