@@ -671,3 +671,10 @@ table.gpsl-table td {
 .tile-fixtures::after {
   background-image: url("images/panel_bg/Fixtures.png");
 }
+
+/* Club History watermark */
+.tile-history::after {
+  background-image: url("images/panel_bg/History.png");
+  background-size: contain;
+}
+
