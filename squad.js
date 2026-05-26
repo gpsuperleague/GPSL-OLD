@@ -1,54 +1,54 @@
-// ===============================
-// SQUAD.JS — First Team Squad Logic
-// ===============================
+// squad.js — modular version of legacy dashboard squad logic
 
-import { supabase } from "./supabase_client.js";
-import { applyPESDBRowClicks } from "./global_ui.js";
-import { initGlobal } from "./global.js";
-import { loadClubsMap } from "./clubs_lookup.js";
+import { fullClubName } from "./clubs_lookup.js";
 
-// GLOBAL STATE
-let currentUserShort = null;
+const supabase = window.supabase;
+
+// STATE
 let userObj = null;
+let userId = null;
+let currentUserShort = null;
 let activeListingsCache = [];
 let selectedPlayerForListing = null;
 
-// ===============================
-// INIT
-// ===============================
+// ENTRY POINT
 document.addEventListener("DOMContentLoaded", async () => {
-  await initGlobal();
-
   const { data: { user } } = await supabase.auth.getUser();
-  userObj = user;
 
-  const { data: club } = await supabase
+  if (!user) {
+    window.location = "login.html";
+    return;
+  }
+
+  userObj = user;
+  userId = user.id;
+
+  document.getElementById("userEmail").textContent = user.email;
+
+  // Load club for this user (same as legacy inline script)
+  const { data: club, error } = await supabase
     .from("Clubs")
     .select("*")
     .eq("owner_id", user.id)
     .single();
 
-  currentUserShort = club.ShortName;
+  if (error || !club) {
+    alert("No club assigned to this account.");
+    return;
+  }
 
-  document.getElementById("userEmail").textContent = user.email;
+  currentUserShort = club.ShortName;
+  window.GPSL_CLUB_SHORTNAME = currentUserShort;
+
+  document.getElementById("dashboardTitle").textContent = `${club.Club} Squad`;
   document.getElementById("clubBadgeHeader").src =
     `images/club_badges/${currentUserShort}.png`;
 
-  await loadClubsMap();
   await loadActiveListingsCache();
   await loadSquad();
-
-  // Load modal HTML
-  const modalContainer = document.getElementById("modal-container");
-  const modalHTML = await fetch("list_player_modal.html").then(r => r.text());
-  modalContainer.innerHTML = modalHTML;
-
-  wireModalButtons();
 });
 
-// ===============================
-// ACTIVE LISTINGS CACHE
-// ===============================
+// ACTIVE LISTINGS CACHE (for status column)
 async function loadActiveListingsCache() {
   const { data } = await supabase
     .from("Player_Transfer_Listings")
@@ -59,23 +59,25 @@ async function loadActiveListingsCache() {
   activeListingsCache = data || [];
 }
 
-// ===============================
-// LOAD SQUAD
-// ===============================
+// SQUAD
 async function loadSquad() {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("Players")
     .select("*")
     .eq("Contracted_Team", currentUserShort);
 
-  renderSquad(data || []);
+  if (error) {
+    console.error("Squad load error", error);
+    return;
+  }
+
+  renderSquad(data);
 }
 
-// ===============================
-// RENDER SQUAD
-// ===============================
 function renderSquad(players) {
   const tbody = document.getElementById("squad-body");
+  if (!tbody) return;
+
   tbody.innerHTML = "";
 
   const groups = {
@@ -134,25 +136,25 @@ function renderSquad(players) {
   applyPESDBRowClicks("squad-body");
 }
 
-// ===============================
-// PLAYER ACTION HANDLER
-// ===============================
+// ACTION HANDLER (global for <select>)
 window.handlePlayerAction = function(playerId, action) {
   if (action === "list") {
     openListPlayerModalByID({ Konami_ID: playerId });
   }
 };
 
-// ===============================
-// MODAL LOGIC (unchanged from dashboard.js)
-// ===============================
-
+// LIST PLAYER MODAL
 async function openListPlayerModalByID(playerRef) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("Players")
     .select("*")
     .eq("Konami_ID", playerRef.Konami_ID)
     .single();
+
+  if (error || !data) {
+    console.error("Player lookup failed", error);
+    return;
+  }
 
   openListPlayerModal(data);
 }
@@ -179,11 +181,7 @@ function openListPlayerModal(player) {
   document.getElementById("list-player-modal-backdrop").style.display = "flex";
 }
 
-// ===============================
-// RESERVE VALIDATION + INCREMENTS
-// (unchanged from dashboard.js)
-// ===============================
-
+// RESERVE INPUT + VALIDATION (unchanged from legacy)
 function parseNumericInput(value) {
   return Number(String(value).replace(/,/g, "")) || 0;
 }
@@ -258,42 +256,38 @@ function addReserveIncrement(amount) {
   validateReserveInput();
 }
 
-function wireModalButtons() {
-  document.getElementById("dec-500k-list").onclick = () => addReserveIncrement(-500000);
-  document.getElementById("dec-1m-list").onclick = () => addReserveIncrement(-1000000);
-  document.getElementById("dec-5m-list").onclick = () => addReserveIncrement(-5000000);
+// BUTTON WIRING
+document.getElementById("dec-500k-list").onclick = () => addReserveIncrement(-500000);
+document.getElementById("dec-1m-list").onclick = () => addReserveIncrement(-1000000);
+document.getElementById("dec-5m-list").onclick = () => addReserveIncrement(-5000000);
 
-  document.getElementById("inc-500k-list").onclick = () => addReserveIncrement(500000);
-  document.getElementById("inc-1m-list").onclick = () => addReserveIncrement(1000000);
-  document.getElementById("inc-5m-list").onclick = () => addReserveIncrement(5000000);
+document.getElementById("inc-500k-list").onclick = () => addReserveIncrement(500000);
+document.getElementById("inc-1m-list").onclick = () => addReserveIncrement(1000000);
+document.getElementById("inc-5m-list").onclick = () => addReserveIncrement(5000000);
 
-  document.getElementById("useMarketValueBtn").onclick = () => {
-    if (!selectedPlayerForListing) return;
-    const input = document.getElementById("reserveInput");
-    input.value = formatNumeric(selectedPlayerForListing.market_value);
-    validateReserveInput();
-  };
+document.getElementById("useMarketValueBtn").onclick = () => {
+  if (!selectedPlayerForListing) return;
+  const input = document.getElementById("reserveInput");
+  input.value = formatNumeric(selectedPlayerForListing.market_value);
+  validateReserveInput();
+};
 
-  document.getElementById("useMaxReserveBtn").onclick = () => {
-    if (!selectedPlayerForListing) return;
-    const input = document.getElementById("reserveInput");
-    input.value = formatNumeric(selectedPlayerForListing.Maximum_Reserve_Price);
-    validateReserveInput();
-  };
+document.getElementById("useMaxReserveBtn").onclick = () => {
+  if (!selectedPlayerForListing) return;
+  const input = document.getElementById("reserveInput");
+  input.value = formatNumeric(selectedPlayerForListing.Maximum_Reserve_Price);
+  validateReserveInput();
+};
 
-  document.getElementById("reserveInput").oninput = () => validateReserveInput();
+document.getElementById("reserveInput").oninput = () => validateReserveInput();
 
-  document.getElementById("cancelListBtn").onclick = () => {
-    document.getElementById("list-player-modal-backdrop").style.display = "none";
-  };
+document.getElementById("cancelListBtn").onclick = () => {
+  document.getElementById("list-player-modal-backdrop").style.display = "none";
+};
 
-  document.getElementById("confirmListBtn").onclick = validateAndCreateListing;
-}
+document.getElementById("confirmListBtn").onclick = validateAndCreateListing;
 
-// ===============================
-// CREATE LISTING
-// (unchanged from dashboard.js)
-// ===============================
+// CREATE LISTING (trimmed: no loadListings, only squad + cache)
 async function validateAndCreateListing() {
   const input = document.getElementById("reserveInput");
   const reserve = parseNumericInput(input.value);
@@ -301,6 +295,18 @@ async function validateAndCreateListing() {
   const max = selectedPlayerForListing.Maximum_Reserve_Price;
 
   if (!validateReserveInput()) return;
+
+  if (reserve < mv) {
+    document.getElementById("reserveError").textContent =
+      `Reserve must be at least market value (₿ ${mv.toLocaleString("en-GB")}).`;
+    return;
+  }
+
+  if (reserve > max) {
+    document.getElementById("reserveError").textContent =
+      `Reserve cannot exceed max allowed (₿ ${max.toLocaleString("en-GB")}).`;
+    return;
+  }
 
   const now = new Date().toISOString();
   const endTime = new Date(Date.now() + 86400000).toISOString();
@@ -325,4 +331,61 @@ async function validateAndCreateListing() {
       review_deadline: endTime,
       winning_bid: null,
       winning_club: null,
-      transfer
+      transfer_completed: false,
+      archived: false,
+      hour_extended: false,
+      was_extended: false,
+      extension_type: "none",
+      extension_count: 0,
+      initial_end_time: endTime,
+      extension_state: "none",
+      last_extension_time: null
+    });
+
+  if (error) {
+    console.error("LISTING INSERT ERROR:", error);
+    document.getElementById("reserveError").textContent =
+      "Failed to create listing. Please try again.";
+    return;
+  }
+
+  document.getElementById("list-player-modal-backdrop").style.display = "none";
+
+  await loadActiveListingsCache();
+  await loadSquad();
+}
+
+// UNIVERSAL PESDB ROW CLICK HANDLER (copied from legacy)
+function applyPESDBRowClicks(tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+
+  tbody.querySelectorAll("tr").forEach(row => {
+    row.style.cursor = "pointer";
+
+    row.addEventListener("click", e => {
+      const clickedButton =
+        e.target.closest("button") ||
+        e.currentTarget.querySelector("button:hover");
+
+      if (
+        e.target.closest("select") ||
+        clickedButton ||
+        e.target.closest(".decision-buttons")
+      ) {
+        return;
+      }
+
+      const id = row.dataset.konamiId;
+      if (id) {
+        window.open(
+          `https://pesdb.net/efootball/?id=${id}`,
+          "_blank",
+          "noopener"
+        );
+      }
+    });
+  });
+}
+
+console.log("Squad JS loaded successfully.");
