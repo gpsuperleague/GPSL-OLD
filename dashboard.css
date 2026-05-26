@@ -662,3 +662,8 @@ table.gpsl-table td {
 .tile-transfer::after {
   background-image: url("images/panel_bg/Transfer.png");
 }
+
+/* Match Day watermark */
+.tile-matchday::after {
+  background-image: url("images/panel_bg/MatchDay.png");
+}
