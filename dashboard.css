@@ -667,3 +667,7 @@ table.gpsl-table td {
 .tile-matchday::after {
   background-image: url("images/panel_bg/MatchDay.png");
 }
+/* Fixtures watermark */
+.tile-fixtures::after {
+  background-image: url("images/panel_bg/Fixtures.png");
+}
