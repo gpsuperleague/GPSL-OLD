@@ -1,0 +1,157 @@
+/* ===========================
+   SQUAD PAGE DARK THEME
+   =========================== */
+
+/* Page text */
+body {
+  color: #ddd;
+}
+
+/* Section headers */
+.section-header {
+  color: #ff9900;
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+/* ===========================
+   TABLE STYLING
+   =========================== */
+
+.gpsl-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1a1a1a;
+  color: #ddd;
+}
+
+.gpsl-table th {
+  background: #222;
+  color: #ff9900;
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  text-align: left;
+}
+
+.gpsl-table td {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  color: #ddd;
+}
+
+.gpsl-table tr:hover {
+  background: #222;
+}
+
+/* ===========================
+   POSITION GROUP HEADERS
+   =========================== */
+
+.squad-section-row {
+  background: #111;
+}
+
+.squad-section-title {
+  color: #ff9900;
+  font-weight: bold;
+  padding: 8px;
+  font-size: 18px;
+}
+
+/* ===========================
+   PLAYER IMAGE
+   =========================== */
+
+.player-thumb {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+/* ===========================
+   STATUS PILLS
+   =========================== */
+
+.status-pill {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #111;
+}
+
+.status-listed {
+  background: #ff9900;
+}
+
+.status-not-listed {
+  background: #555;
+  color: #ddd;
+}
+
+/* ===========================
+   LIST PLAYER MODAL
+   =========================== */
+
+#list-player-modal-backdrop {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+#list-player-modal {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+  color: #ddd;
+  border: 1px solid #333;
+}
+
+#list-player-modal h3 {
+  color: #ff9900;
+  margin-top: 0;
+}
+
+#list-player-modal input {
+  background: #111;
+  color: #ddd;
+  border: 1px solid #444;
+  padding: 6px;
+  width: 100%;
+}
+
+.modal-row {
+  margin-top: 10px;
+}
+
+#reserveError {
+  color: #ff4444;
+  margin-top: 5px;
+}
+
+/* Buttons inside modal */
+.dec-btn, .inc-btn {
+  background: #333;
+  color: #ddd;
+  border: 1px solid #444;
+  padding: 5px 10px;
+  margin: 2px;
+  cursor: pointer;
+}
+
+.dec-btn:hover, .inc-btn:hover {
+  background: #444;
+}
+
+.modal-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}
