@@ -1,100 +1,108 @@
-/* ===========================
-   SQUAD PAGE DARK THEME
-   =========================== */
+/* ==========================================================
+   FORCE SQUAD.CSS TO OVERRIDE DASHBOARD.CSS
+   ========================================================== */
 
-/* Page text */
-body {
+body.squad-page .gpsl-table,
+body.squad-page .gpsl-table * {
+  all: revert !important;
+}
+
+/* ==========================================================
+   SQUAD PAGE DARK THEME
+   ========================================================== */
+
+body.squad-page {
   color: #ddd;
 }
 
 /* Section headers */
-.section-header {
+body.squad-page .section-header {
   color: #ff9900;
   font-size: 24px;
   margin-bottom: 10px;
 }
 
-/* ===========================
+/* ==========================================================
    TABLE STYLING
-   =========================== */
+   ========================================================== */
 
-.gpsl-table {
+body.squad-page .gpsl-table {
   width: 100%;
   border-collapse: collapse;
-  background: #1a1a1a;
-  color: #ddd;
+  background: #1a1a1a !important;
+  color: #ddd !important;
 }
 
-.gpsl-table th {
-  background: #222;
-  color: #ff9900;
+body.squad-page .gpsl-table th {
+  background: #222 !important;
+  color: #ff9900 !important;
   padding: 10px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #333 !important;
   text-align: left;
 }
 
-.gpsl-table td {
+body.squad-page .gpsl-table td {
   padding: 10px;
-  border-bottom: 1px solid #333;
-  color: #ddd;
+  border-bottom: 1px solid #333 !important;
+  color: #ddd !important;
 }
 
-.gpsl-table tr:hover {
-  background: #222;
+body.squad-page .gpsl-table tr:hover {
+  background: #222 !important;
 }
 
-/* ===========================
+/* ==========================================================
    POSITION GROUP HEADERS
-   =========================== */
+   ========================================================== */
 
-.squad-section-row {
-  background: #111;
+body.squad-page .squad-section-row {
+  background: #111 !important;
 }
 
-.squad-section-title {
-  color: #ff9900;
+body.squad-page .squad-section-title {
+  color: #ff9900 !important;
   font-weight: bold;
   padding: 8px;
   font-size: 18px;
 }
 
-/* ===========================
+/* ==========================================================
    PLAYER IMAGE
-   =========================== */
+   ========================================================== */
 
-.player-thumb {
+body.squad-page .player-thumb {
   width: 50px;
   height: 50px;
   object-fit: contain;
   border-radius: 4px;
 }
 
-/* ===========================
+/* ==========================================================
    STATUS PILLS
-   =========================== */
+   ========================================================== */
 
-.status-pill {
+body.squad-page .status-pill {
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: bold;
-  color: #111;
+  color: #111 !important;
 }
 
-.status-listed {
-  background: #ff9900;
+body.squad-page .status-listed {
+  background: #ff9900 !important;
 }
 
-.status-not-listed {
-  background: #555;
-  color: #ddd;
+body.squad-page .status-not-listed {
+  background: #555 !important;
+  color: #ddd !important;
 }
 
-/* ===========================
+/* ==========================================================
    LIST PLAYER MODAL
-   =========================== */
+   ========================================================== */
 
-#list-player-modal-backdrop {
+body.squad-page #list-player-modal-backdrop {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
@@ -105,80 +113,55 @@ body {
   z-index: 9999;
 }
 
-#list-player-modal {
-  background: #1a1a1a;
+body.squad-page #list-player-modal {
+  background: #1a1a1a !important;
   padding: 20px;
   border-radius: 10px;
   width: 400px;
-  color: #ddd;
-  border: 1px solid #333;
+  color: #ddd !important;
+  border: 1px solid #333 !important;
 }
 
-#list-player-modal h3 {
-  color: #ff9900;
+body.squad-page #list-player-modal h3 {
+  color: #ff9900 !important;
   margin-top: 0;
 }
 
-#list-player-modal input {
-  background: #111;
-  color: #ddd;
-  border: 1px solid #444;
+body.squad-page #list-player-modal input {
+  background: #111 !important;
+  color: #ddd !important;
+  border: 1px solid #444 !important;
   padding: 6px;
   width: 100%;
 }
 
-.modal-row {
+body.squad-page .modal-row {
   margin-top: 10px;
 }
 
-#reserveError {
-  color: #ff4444;
+body.squad-page #reserveError {
+  color: #ff4444 !important;
   margin-top: 5px;
 }
 
 /* Buttons inside modal */
-.dec-btn, .inc-btn {
-  background: #333;
-  color: #ddd;
-  border: 1px solid #444;
+body.squad-page .dec-btn,
+body.squad-page .inc-btn {
+  background: #333 !important;
+  color: #ddd !important;
+  border: 1px solid #444 !important;
   padding: 5px 10px;
   margin: 2px;
   cursor: pointer;
 }
 
-.dec-btn:hover, .inc-btn:hover {
-  background: #444;
+body.squad-page .dec-btn:hover,
+body.squad-page .inc-btn:hover {
+  background: #444 !important;
 }
 
-.modal-buttons {
+body.squad-page .modal-buttons {
   margin-top: 20px;
   display: flex;
   justify-content: space-between;
-}
-.gpsl-table {
-  background: #1a1a1a !important;
-  color: #ddd !important;
-}
-
-.gpsl-table th {
-  background: #222 !important;
-  color: #ff9900 !important;
-}
-
-.gpsl-table td {
-  color: #ddd !important;
-  border-bottom: 1px solid #333 !important;
-}
-
-.status-pill {
-  color: #111 !important;
-}
-
-.status-listed {
-  background: #ff9900 !important;
-}
-
-.status-not-listed {
-  background: #555 !important;
-  color: #ddd !important;
 }
