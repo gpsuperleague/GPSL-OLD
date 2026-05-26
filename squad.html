@@ -41,7 +41,7 @@
     </div>
 
     <!-- LINKS TO SUBPAGES -->
-    <div class="tile-grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
+    <div class="tile-grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
 
       <div class="tile" onclick="location.href='squad_firstteam.html'">
         First Team
@@ -57,12 +57,86 @@
 
     </div>
 
+    <!-- FULL SQUAD TABLE (LEGACY DASHBOARD PANEL) -->
+    <h2 class="section-header">Squad</h2>
+    <div class="panel">
+      <table class="gpsl-table">
+        <thead>
+          <tr>
+            <th>Img</th>
+            <th>Player</th>
+            <th>Nat</th>
+            <th>Pos</th>
+            <th>Rating</th>
+            <th>Playstyle</th>
+            <th>Value</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="squad-body"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- LIST PLAYER MODAL (COPIED FROM LEGACY DASHBOARD) -->
+  <div id="list-player-modal-backdrop">
+    <div id="list-player-modal">
+      <h3>List Player</h3>
+
+      <div id="modalPlayerName"></div>
+      <div id="modalPlayerInfo"></div>
+
+      <div class="modal-row">
+        <label>Market Value</label>
+        <div id="modalMarketValue">₿ 0</div>
+      </div>
+
+      <div class="modal-row">
+        <label>Max Allowed Reserve</label>
+        <div id="modalMaxReserve">₿ 0</div>
+      </div>
+
+      <div class="modal-row">
+        <label for="reserveInput">Reserve Price</label>
+        <input type="text" id="reserveInput" inputmode="numeric">
+        <div id="reserveError"></div>
+
+        <div style="margin-top:10px;">
+          <button class="dec-btn" id="dec-500k-list">-500k</button>
+          <button class="dec-btn" id="dec-1m-list">-1m</button>
+          <button class="dec-btn" id="dec-5m-list">-5m</button>
+
+          <button class="inc-btn" id="inc-500k-list">+500k</button>
+          <button class="inc-btn" id="inc-1m-list">+1m</button>
+          <button class="inc-btn" id="inc-5m-list">+5m</button>
+        </div>
+
+        <div style="margin-top:10px;">
+          <button id="useMarketValueBtn" class="button">Use Market Value</button>
+          <button id="useMaxReserveBtn" class="button">Use Max Allowed Reserve</button>
+        </div>
+      </div>
+
+      <div id="modalWarning">
+        Listing a player is irreversible once confirmed.
+      </div>
+
+      <div class="modal-buttons">
+        <button class="button" id="cancelListBtn">Cancel</button>
+        <button class="button" id="confirmListBtn">Confirm Listing</button>
+      </div>
+
+    </div>
   </div>
 
   <!-- GLOBAL SCRIPTS -->
-  <script type="module" src="global.js"></script>
   <script type="module" src="supabase_client.js"></script>
+  <script type="module" src="global.js"></script>
   <script type="module" src="global_ui.js"></script>
+  <script type="module" src="clubs_lookup.js"></script>
+  <script type="module" src="squad.js"></script>
 
 </body>
 </html>
