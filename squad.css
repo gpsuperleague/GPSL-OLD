@@ -155,3 +155,30 @@ body {
   display: flex;
   justify-content: space-between;
 }
+.gpsl-table {
+  background: #1a1a1a !important;
+  color: #ddd !important;
+}
+
+.gpsl-table th {
+  background: #222 !important;
+  color: #ff9900 !important;
+}
+
+.gpsl-table td {
+  color: #ddd !important;
+  border-bottom: 1px solid #333 !important;
+}
+
+.status-pill {
+  color: #111 !important;
+}
+
+.status-listed {
+  background: #ff9900 !important;
+}
+
+.status-not-listed {
+  background: #555 !important;
+  color: #ddd !important;
+}
