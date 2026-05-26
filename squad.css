@@ -1,18 +1,16 @@
 /* ==========================================================
-   FORCE SQUAD.CSS TO OVERRIDE DASHBOARD.CSS
-   ========================================================== */
-
-body.squad-page .gpsl-table,
-body.squad-page .gpsl-table * {
-  all: revert !important;
-}
-
-/* ==========================================================
    SQUAD PAGE DARK THEME
    ========================================================== */
 
 body.squad-page {
   color: #ddd;
+  background: #000; /* ensures no white gaps */
+}
+
+/* Remove white background from dashboard panels */
+body.squad-page .page-container,
+body.squad-page .panel {
+  background: transparent !important;
 }
 
 /* Section headers */
@@ -29,26 +27,26 @@ body.squad-page .section-header {
 body.squad-page .gpsl-table {
   width: 100%;
   border-collapse: collapse;
-  background: #1a1a1a !important;
-  color: #ddd !important;
+  background: #1a1a1a;
+  color: #ddd;
 }
 
 body.squad-page .gpsl-table th {
-  background: #222 !important;
-  color: #ff9900 !important;
+  background: #222;
+  color: #ff9900;
   padding: 10px;
-  border-bottom: 1px solid #333 !important;
+  border-bottom: 1px solid #333;
   text-align: left;
 }
 
 body.squad-page .gpsl-table td {
   padding: 10px;
-  border-bottom: 1px solid #333 !important;
-  color: #ddd !important;
+  border-bottom: 1px solid #333;
+  color: #ddd;
 }
 
 body.squad-page .gpsl-table tr:hover {
-  background: #222 !important;
+  background: #222;
 }
 
 /* ==========================================================
@@ -56,11 +54,11 @@ body.squad-page .gpsl-table tr:hover {
    ========================================================== */
 
 body.squad-page .squad-section-row {
-  background: #111 !important;
+  background: #111;
 }
 
 body.squad-page .squad-section-title {
-  color: #ff9900 !important;
+  color: #ff9900;
   font-weight: bold;
   padding: 8px;
   font-size: 18px;
@@ -71,9 +69,9 @@ body.squad-page .squad-section-title {
    ========================================================== */
 
 body.squad-page .player-thumb {
-  width: 50px;
-  height: 50px;
-  object-fit: contain;
+  width: 50px !important;
+  height: 50px !important;
+  object-fit: contain !important;
   border-radius: 4px;
 }
 
@@ -86,16 +84,28 @@ body.squad-page .status-pill {
   border-radius: 6px;
   font-size: 12px;
   font-weight: bold;
-  color: #111 !important;
+  color: #111;
 }
 
 body.squad-page .status-listed {
-  background: #ff9900 !important;
+  background: #ff9900;
 }
 
 body.squad-page .status-not-listed {
-  background: #555 !important;
+  background: #555;
+  color: #ddd;
+}
+
+/* ==========================================================
+   ACTION DROPDOWN
+   ========================================================== */
+
+body.squad-page select {
+  background: #111 !important;
   color: #ddd !important;
+  border: 1px solid #444 !important;
+  padding: 4px 6px;
+  font-size: 12px;
 }
 
 /* ==========================================================
@@ -114,23 +124,23 @@ body.squad-page #list-player-modal-backdrop {
 }
 
 body.squad-page #list-player-modal {
-  background: #1a1a1a !important;
+  background: #1a1a1a;
   padding: 20px;
   border-radius: 10px;
   width: 400px;
-  color: #ddd !important;
-  border: 1px solid #333 !important;
+  color: #ddd;
+  border: 1px solid #333;
 }
 
 body.squad-page #list-player-modal h3 {
-  color: #ff9900 !important;
+  color: #ff9900;
   margin-top: 0;
 }
 
 body.squad-page #list-player-modal input {
-  background: #111 !important;
-  color: #ddd !important;
-  border: 1px solid #444 !important;
+  background: #111;
+  color: #ddd;
+  border: 1px solid #444;
   padding: 6px;
   width: 100%;
 }
@@ -140,16 +150,16 @@ body.squad-page .modal-row {
 }
 
 body.squad-page #reserveError {
-  color: #ff4444 !important;
+  color: #ff4444;
   margin-top: 5px;
 }
 
 /* Buttons inside modal */
 body.squad-page .dec-btn,
 body.squad-page .inc-btn {
-  background: #333 !important;
-  color: #ddd !important;
-  border: 1px solid #444 !important;
+  background: #333;
+  color: #ddd;
+  border: 1px solid #444;
   padding: 5px 10px;
   margin: 2px;
   cursor: pointer;
@@ -157,7 +167,7 @@ body.squad-page .inc-btn {
 
 body.squad-page .dec-btn:hover,
 body.squad-page .inc-btn:hover {
-  background: #444 !important;
+  background: #444;
 }
 
 body.squad-page .modal-buttons {
