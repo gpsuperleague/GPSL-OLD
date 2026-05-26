@@ -678,3 +678,8 @@ table.gpsl-table td {
   background-size: contain;
 }
 
+/* Competition Progress watermark */
+.tile-progress::after {
+  background-image: url("images/panel_bg/Progress.png");
+  background-size: contain;
+}
