@@ -15,6 +15,18 @@
   <link rel="stylesheet" href="squad.css">
 
   <style>
+    body {
+      background: #111;
+      color: #ddd;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      color: #ff9900;
+    }
     .section-header {
       color: #ff9900;
       margin-bottom: 10px;
@@ -25,11 +37,13 @@
 
 <body class="squad-page">
 
+  <!-- NAV -->
   <div id="nav"></div>
 
+  <!-- PAGE CONTAINER -->
   <div class="page-container">
 
-    <!-- HEADER -->
+    <!-- HEADER (IDENTICAL TO DASHBOARD) -->
     <div id="headerContainer">
       <div id="headerLeft">
         <img id="clubBadgeHeader" src="" alt="Club Badge">
@@ -44,25 +58,36 @@
       </div>
     </div>
 
-    <!-- FULL SQUAD TABLE -->
-    <h2 class="section-header">Squad</h2>
-    <div class="panel">
-      <table class="gpsl-table">
-        <thead>
-          <tr>
-            <th>Img</th>
-            <th>Player</th>
-            <th>Nat</th>
-            <th>Pos</th>
-            <th>Rating</th>
-            <th>Playstyle</th>
-            <th>Value</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="squad-body"></tbody>
-      </table>
+    <!-- MAIN CONTENT (MATCHES DASHBOARD STRUCTURE) -->
+    <div id="mainContent">
+      <div id="leftColumn">
+
+        <h2 class="section-header">Squad</h2>
+
+        <div class="panel">
+          <table class="gpsl-table">
+            <thead>
+              <tr>
+                <th>Img</th>
+                <th>Player</th>
+                <th>Nat</th>
+                <th>Pos</th>
+                <th>Rating</th>
+                <th>Playstyle</th>
+                <th>Value</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="squad-body"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN EMPTY (BUT STRUCTURE MATCHES DASHBOARD) -->
+      <div id="rightColumn">
+      </div>
     </div>
 
   </div>
